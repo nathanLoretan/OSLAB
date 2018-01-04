@@ -1,9 +1,9 @@
 # POPA:     Pop DI, SI, BP, BX, DX, CX, AX
 # POPAD:    Pop EDI, ESI, EBP, EBX, EDX, ECX, EAX
 
-.set IRQ_BASE, 0x20
+; .set IRQ_BASE, 0x20
 
-.extern isr_default, IRQ_BASE
+.extern isr_handler, exc_handler, IRQ_BASE
 
 .section .text
 
@@ -17,6 +17,9 @@
     pushl %ebx
     pushl %eax
 
+    movl %cr3, %eax
+    pushl %eax
+
     # popl %ds
     # popl %es
     # popl %fs
@@ -28,6 +31,9 @@
     # popl %fs
     # popl %es
     # popl %ds
+
+    popl %eax
+    movl %eax, %cr3
 
     popl %eax
     popl %ebx
@@ -44,7 +50,7 @@
 .global exc_handler_\n
 exc_handler_\n:
     movb $\n, (interrupt_number)
-    jmp interrupt_handler
+    jmp exception_handler
 .endm
 
 .macro interrupt n
@@ -100,7 +106,27 @@ interrupt 0x80
 # ------------------------------------------------------------------------------
 # Call the interrupt service routine
 # 1. Save the registers
-# 2. Call the function isr_default
+# 2. Call the function isr_handler
+# 3. Restore the registers
+exception_handler:
+
+    SAVE_REGS                   # Save the registers
+
+    pushl %esp                  # push stack pointer
+    push (interrupt_number)     # push the interrupt nber as paramter
+    call exc_handler            # call the isr
+    mov %eax, %esp              # switch the stack
+
+    RESTORE_REGS                # Restore the registers
+
+    add $4, %esp
+
+    iret                        # interrupt return
+
+# ------------------------------------------------------------------------------
+# Call the interrupt service routine
+# 1. Save the registers
+# 2. Call the function isr_handler
 # 3. Restore the registers
 interrupt_handler:
 
@@ -108,7 +134,7 @@ interrupt_handler:
 
     pushl %esp                  # push stack pointer
     push (interrupt_number)     # push the interrupt nber as paramter
-    call isr_default            # call the isr
+    call isr_handler            # call the isr
     mov %eax, %esp              # switch the stack
 
     RESTORE_REGS                # Restore the registers

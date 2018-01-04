@@ -3,6 +3,7 @@
 #define __SYSCALLS_PRINT_H__
 
 #include <common/types.h>
+#include <stdarg.h>
 
 void printf(char* str);
 void printfHex(uint8_t key);

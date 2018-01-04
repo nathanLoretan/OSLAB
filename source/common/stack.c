@@ -16,8 +16,8 @@ int stack_init(stack_t* stack, size_t stack_size, size_t data_size)
     stack->top    = 0;
     stack->bottom = 0;
 
-    stack->stack_size   = stack_size;
-    stack->data_size = data_size;
+    stack->stack_size = stack_size;
+    stack->data_size  = data_size;
 
     return 0;
 }

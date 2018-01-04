@@ -88,19 +88,124 @@ isr_t im_queue_get()
     return im_handlers[int_id];
 }
 
-uint32_t isr_default(uint8_t int_id, uint32_t esp)
-{
-    // if(int_id != 0x20)
-    // {
-    //     printf("INTERRUPT: ");
-    //     printfHex(int_id);
-    //     printf("\n");
-    // }
 
-    if(int_id == IRQ_TIMER) {
-        // tick();
-        printf("HERE\n");
-        esp = (uint32_t)schedule_run((stack_layout_t*)esp);
+uint32_t exc_handler(uint8_t exc_id, uint32_t esp)
+{
+    switch(exc_id)
+    {
+        // case 0x00: {   // Division by zero
+        // } break;
+        // case 0x01: {   // Single-step interrupt
+        // } break;
+        // case 0x02: {   // NMI
+        // } break;
+        // case 0x03: {   // Breakpoint
+        // } break;
+        // case 0x04: {   // Overflow
+        // } break;
+        // case 0x05: {   // Bounds
+        // } break;
+        // case 0x06: {   // Invalid Opcode
+        // } break;
+        // case 0x07: {   // Coprocessor not available
+        // } break;
+        // case 0x08: {   // Double fault
+        // } break;
+        // case 0x09: {   // Coprocessor Segment Overrun
+        // } break;
+        // case 0x0A: {   // Invalid Task State Segment
+        // } break;
+        // case 0x0B: {   // Segment not present
+        // } break;
+        // case 0x0C: {   // Stack Fault
+        // } break;
+        // case 0x0D: {   // General protection fault
+        // } break;
+        case 0x0E: {  // Page fault
+            uint32_t cr2;
+            asm volatile ("movl %%cr2, %0": :"r" (cr2));
+            printf("Page Fault: ");
+            printfHex32(cr2);
+            printf("\n");
+        } break;
+        // case 0x0F: {   // reserved
+        // } break;
+        // case 0x10: {   // Math Fault
+        // } break;
+        // case 0x11: {   // Alignment Check
+        // } break;
+        // case 0x12: {   // Machine Check
+        // } break;
+        // case 0x13: {   // SIMD Floating-Point Exception
+        // } break;
+        // case 0x14: {   // Virtualization Exception
+        // } break;
+        // case 0x15: {   // Control Protection Exception
+        // } break;
+
+        default: {
+            printf("EXCEPTION: ");
+            printfHex(exc_id);
+            printf("\n");
+        } break;
+    }
+
+    //Acknowledge the Interrupt
+    if(exc_id >= IRQ_BASE && exc_id < IRQ_BASE + IRQ_NBR_MASTER + IRQ_NBR_SLAVE)
+    {
+        io_write8(PORT_PIC_MASTER_COMMAND, 0x20);
+
+        if (exc_id >= IRQ_BASE + IRQ_NBR_MASTER){
+            io_write8(PORT_PIC_SLAVE_COMMAND,  0x20);
+        }
+    }
+
+    return esp;
+}
+
+uint32_t isr_handler(uint8_t int_id, uint32_t esp)
+{
+    switch(int_id)
+    {
+        case IRQ_BASE + 0x00: {   // Programmable Interrupt Timer Interrupt
+            esp = (uint32_t)schedule_run((context_t*)esp);
+        } break;
+        // case IRQ_BASE + 0x01: {   // Keyboard Interrupt
+        // } break;
+        // case IRQ_BASE + 0x02: {   // Cascade (used internally by the two PICs. never raised)
+        // } break;
+        // case IRQ_BASE + 0x03: {   // COM2 (if enabled)
+        // } break;
+        // case IRQ_BASE + 0x04: {   // COM1 (if enabled)
+        // } break;
+        // case IRQ_BASE + 0x05: {   // LPT2 (if enabled)
+        // } break;
+        // case IRQ_BASE + 0x06: {   // Floppy Disk
+        // } break;
+        // case IRQ_BASE + 0x07: {   // LPT1
+        // } break;
+        // case IRQ_BASE + 0x08: {   // CMOS real-time clock (if enabled)
+        // } break;
+        // case IRQ_BASE + 0x09: {   // Free for peripherals / legacy SCSI / NIC
+        // } break;
+        // case IRQ_BASE + 0x0A: {   // Free for peripherals / SCSI / NIC
+        // } break;
+        // case IRQ_BASE + 0x0B: {   // Free for peripherals / SCSI / NIC
+        // } break;
+        // case IRQ_BASE + 0x0C: {   // PS2 Mouse
+        // } break;
+        // case IRQ_BASE + 0x0D: {   // FPU / Coprocessor / Inter-processor
+        // } break;
+        // case IRQ_BASE + 0x0E: {   // Primary ATA Hard Disk
+        // } break;
+        // case IRQ_BASE + 0x0F: {   // Secondary ATA Hard Disk
+        // } break;
+
+        default: {
+            printf("INTERRUPT: ");
+            printfHex(int_id);
+            printf("\n");
+        } break;
     }
 
     im_queue_add(int_id);
@@ -125,53 +230,53 @@ void im_subscribe(isr_t handler, uint8_t interrupt)
 
 void im_init()
 {
-    uint32_t code_segment = gdt_code_seg_select();
+    seg_select_t code_segment = gdt_code_seg_select();
 
     // Reset Interrupt Descriptor Table
     for(uint16_t i = 0; i < IDT_SIZE; i++) {
-        idt_interrupt_init(i, code_segment, interrupt_ignored, IDT_INT_GATE_32, 0);
+        idt_interrupt_init(i, *(uint16_t*)&code_segment, interrupt_ignored, IDT_INT_GATE_32, 0);
     }
 
     // Initialize the exceptions
-    idt_interrupt_init(EXC_BASE + 0x00, code_segment, exc_handler_0x00, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x01, code_segment, exc_handler_0x01, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x02, code_segment, exc_handler_0x02, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x03, code_segment, exc_handler_0x03, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x04, code_segment, exc_handler_0x04, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x05, code_segment, exc_handler_0x05, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x06, code_segment, exc_handler_0x06, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x07, code_segment, exc_handler_0x07, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x08, code_segment, exc_handler_0x08, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x09, code_segment, exc_handler_0x09, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x0A, code_segment, exc_handler_0x0A, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x0B, code_segment, exc_handler_0x0B, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x0C, code_segment, exc_handler_0x0C, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x0D, code_segment, exc_handler_0x0D, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x0E, code_segment, exc_handler_0x0E, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x0F, code_segment, exc_handler_0x0F, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x10, code_segment, exc_handler_0x10, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x11, code_segment, exc_handler_0x11, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x12, code_segment, exc_handler_0x12, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x13, code_segment, exc_handler_0x13, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x14, code_segment, exc_handler_0x14, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(EXC_BASE + 0x15, code_segment, exc_handler_0x15, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x00, *(uint16_t*)&code_segment, exc_handler_0x00, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x01, *(uint16_t*)&code_segment, exc_handler_0x01, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x02, *(uint16_t*)&code_segment, exc_handler_0x02, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x03, *(uint16_t*)&code_segment, exc_handler_0x03, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x04, *(uint16_t*)&code_segment, exc_handler_0x04, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x05, *(uint16_t*)&code_segment, exc_handler_0x05, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x06, *(uint16_t*)&code_segment, exc_handler_0x06, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x07, *(uint16_t*)&code_segment, exc_handler_0x07, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x08, *(uint16_t*)&code_segment, exc_handler_0x08, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x09, *(uint16_t*)&code_segment, exc_handler_0x09, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x0A, *(uint16_t*)&code_segment, exc_handler_0x0A, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x0B, *(uint16_t*)&code_segment, exc_handler_0x0B, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x0C, *(uint16_t*)&code_segment, exc_handler_0x0C, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x0D, *(uint16_t*)&code_segment, exc_handler_0x0D, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x0E, *(uint16_t*)&code_segment, exc_handler_0x0E, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x0F, *(uint16_t*)&code_segment, exc_handler_0x0F, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x10, *(uint16_t*)&code_segment, exc_handler_0x10, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x11, *(uint16_t*)&code_segment, exc_handler_0x11, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x12, *(uint16_t*)&code_segment, exc_handler_0x12, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x13, *(uint16_t*)&code_segment, exc_handler_0x13, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x14, *(uint16_t*)&code_segment, exc_handler_0x14, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(EXC_BASE + 0x15, *(uint16_t*)&code_segment, exc_handler_0x15, IDT_INT_GATE_32, 0);
 
-    idt_interrupt_init(IRQ_BASE + 0x00, code_segment, interrupt_0x00, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x01, code_segment, interrupt_0x01, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x02, code_segment, interrupt_0x02, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x03, code_segment, interrupt_0x03, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x04, code_segment, interrupt_0x04, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x05, code_segment, interrupt_0x05, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x06, code_segment, interrupt_0x06, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x07, code_segment, interrupt_0x07, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x08, code_segment, interrupt_0x08, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x09, code_segment, interrupt_0x09, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x0A, code_segment, interrupt_0x0A, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x0B, code_segment, interrupt_0x0B, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x0C, code_segment, interrupt_0x0C, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x0D, code_segment, interrupt_0x0D, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x0E, code_segment, interrupt_0x0E, IDT_INT_GATE_32, 0);
-    idt_interrupt_init(IRQ_BASE + 0x0F, code_segment, interrupt_0x0F, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x00, *(uint16_t*)&code_segment, interrupt_0x00, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x01, *(uint16_t*)&code_segment, interrupt_0x01, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x02, *(uint16_t*)&code_segment, interrupt_0x02, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x03, *(uint16_t*)&code_segment, interrupt_0x03, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x04, *(uint16_t*)&code_segment, interrupt_0x04, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x05, *(uint16_t*)&code_segment, interrupt_0x05, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x06, *(uint16_t*)&code_segment, interrupt_0x06, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x07, *(uint16_t*)&code_segment, interrupt_0x07, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x08, *(uint16_t*)&code_segment, interrupt_0x08, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x09, *(uint16_t*)&code_segment, interrupt_0x09, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x0A, *(uint16_t*)&code_segment, interrupt_0x0A, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x0B, *(uint16_t*)&code_segment, interrupt_0x0B, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x0C, *(uint16_t*)&code_segment, interrupt_0x0C, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x0D, *(uint16_t*)&code_segment, interrupt_0x0D, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x0E, *(uint16_t*)&code_segment, interrupt_0x0E, IDT_INT_GATE_32, 0);
+    idt_interrupt_init(IRQ_BASE + 0x0F, *(uint16_t*)&code_segment, interrupt_0x0F, IDT_INT_GATE_32, 0);
 
     // Initialize the Programmable Interrupt Controller
     pic_init();

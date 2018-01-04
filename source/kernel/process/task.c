@@ -4,39 +4,44 @@
 
 #include <kernel/process/task.h>
 
+static uint32_t pointer = 0;
+
 void task_init(task_t* task, run_t run, size_t size)
 {
-    task->heap  = process_malloc(size);
-    task->stack = task->heap + size;
+    task->heap  = (uint8_t*)pt_getAddr(&kernel_pt[10 + pointer++]);
 
-    mm_process_init(&task->memory_manager, task->heap, size);
+    // mm_process_init(&task->memory_manager, task->heap, size);
 
     // Define where to save the cpu registers
-    task->stack_layout = (stack_layout_t*)(task->stack - sizeof(stack_layout_t));
+    task->context = (context_t*)(task->heap + 0x1000 - sizeof(context_t));
 
-    // // General Purpose Registers
-    task->stack_layout->eax = 0;
-    task->stack_layout->ebx = 0;
-    task->stack_layout->ecx = 0;
-    task->stack_layout->edx = 0;
+    task->context->cr3 = (uint32_t) kernel_pd;
+
+    // General Purpose Registers
+    task->context->eax = 0;
+    task->context->ebx = 0;
+    task->context->ecx = 0;
+    task->context->edx = 0;
+
+    seg_select_t code_seg = gdt_code_seg_select();
 
     // Segment Registers
-    task->stack_layout->cs = gdt_code_seg_select();
-    // task->stack_layout->ds = ;
-    // task->stack_layout->es = ;
-    // task->stack_layout->ss = ;
-    // task->stack_layout->fs = ;
-    // task->stack_layout->gs = ;
+    task->context->cs = *(uint32_t*)&code_seg;
+    // task->context->ds = ;
+    // task->context->es = ;
+    // task->context->ss = ;
+    // task->context->fs = ;
+    // task->context->gs = ;
 
     // Index Registers
-    task->stack_layout->esi = 0;
-    task->stack_layout->edi = 0;
+    task->context->esi = 0;
+    task->context->edi = 0;
 
     // Pointer Registers
-    task->stack_layout->ebp = 0;
-    // task->stack_layout->esp = ;
-    task->stack_layout->eip = (uint32_t)run;
+    task->context->ebp = 0;
+    task->context->esp = (uint32_t)task->context;
+    task->context->eip = (uint32_t)run;
 
     // EFLAGS Register
-    task->stack_layout->eflags = 0x202;
+    task->context->eflags = 0x202;
 }

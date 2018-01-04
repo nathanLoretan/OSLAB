@@ -5,20 +5,22 @@
 #include <kernel/gdt.h>
 
 /* Global Descriptor Table */
-struct gdt_t {
+struct gdt {
     seg_desc_t null_seg_desc;
     seg_desc_t unused_seg_desc;
     seg_desc_t code_seg_desc;
     seg_desc_t data_seg_desc;
-    // seg_desc_t ldt_segment_selector[NBR_LDT_ENTRIES];
 }__attribute__((packed));
 
-struct gdtr_t {
+struct gdtr {
     uint16_t size;
     uint32_t offset;
 }__attribute__((packed));
 
-struct gdt_t gdt;
+typedef struct gdt gdt_t;
+typedef struct gdtr gdtr_t;
+
+gdt_t gdt;
 uint8_t ldt_indexe_entry = 0;
 
 void gdt_init()
@@ -29,7 +31,7 @@ void gdt_init()
     gdt_seg_init(&gdt.code_seg_desc, CODE_SEGMENT, 64*1024*1024, 0);
 
     // Load the GDT using the LGDT assembly instruction.
-    struct gdtr_t gdt_descriptor;
+    gdtr_t gdt_descriptor;
     gdt_descriptor.size   = sizeof(gdt);
     gdt_descriptor.offset = (uint32_t) &gdt;
     asm volatile("lgdt (%0)": :"p" (&gdt_descriptor));
@@ -68,26 +70,26 @@ void gdt_seg_init(seg_desc_t* seg, uint8_t type, uint32_t limit, uint32_t base)
     seg->base_3 = (base >> 24) & 0xFF;
 }
 
-uint32_t gdt_data_seg_select()
+seg_select_t gdt_data_seg_select()
 {
-    // seg_select_t seg_select  = {
-    //     .privilege  = 0,
-    //     .table      = 0,
-    //     .index      = ((uint8_t*)&gdt.data_seg_desc - (uint8_t*)&gdt) >> 3,
-    // };
+    seg_select_t seg_select  = {
+        .privilege  = 0,
+        .table      = 0,
+        .index      = ((uint8_t*)&gdt.data_seg_desc - (uint8_t*)&gdt) >> 3,
+    };
 
-    // return seg_select;
-    return (uint8_t*)&gdt.data_seg_desc - (uint8_t*)&gdt;
+    return seg_select;
+    // return (uint8_t*)&gdt.data_seg_desc - (uint8_t*)&gdt;
 }
 
-uint32_t gdt_code_seg_select()
+seg_select_t gdt_code_seg_select()
 {
-    // seg_select_t seg_select = {
-    //     .privilege  = 0,
-    //     .table      = 0,
-    //     .index      = ((uint8_t*)&gdt.code_seg_desc - (uint8_t*)&gdt) >> 3,
-    // };
+    seg_select_t seg_select = {
+        .privilege  = 0,
+        .table      = 0,
+        .index      = ((uint8_t*)&gdt.code_seg_desc - (uint8_t*)&gdt) >> 3,
+    };
 
-    // return seg_select;
-    return (uint8_t*)&gdt.code_seg_desc - (uint8_t*)&gdt;
+    return seg_select;
+    // return (uint8_t*)&gdt.code_seg_desc - (uint8_t*)&gdt;
 }

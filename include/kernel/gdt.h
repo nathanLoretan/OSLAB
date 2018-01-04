@@ -7,7 +7,6 @@
 #define __KERNEL_GDT_H__
 
 #include <common/types.h>
-// #include <kernel/ldt.h>
 
 #define CODE_SEGMENT    0x9A
 #define DATA_SEGMENT    0x92
@@ -15,14 +14,12 @@
 #define SEGMENT_DESCRIPTOR_FLAG_GR   0x8
 #define SEGMENT_DESCRIPTOR_FLAG_SZ   0x4
 
-#define DESC_TABLE_MAX_SIZE     8192
-
 /* Segment Selector */
-// struct seg_select {
-//     uint8_t  privilege  :2;     // Privilege level of the segment
-//     uint8_t  table      :1;     // 0 GDT, 1 current LDT
-//     uint16_t index      :13;
-// }__attribute__((packed));
+struct seg_select {
+    uint8_t  privilege  :2;     // Privilege level of the segment
+    uint8_t  table      :1;     // 0 GDT, 1 current LDT
+    uint16_t index      :13;
+}__attribute__((packed));
 
 /* Segment Descriptor */
 struct seg_desc {
@@ -36,15 +33,33 @@ struct seg_desc {
 }__attribute__((packed));
 
 typedef struct seg_desc seg_desc_t;
-// typedef struct seg_select seg_select_t;
+typedef struct seg_select seg_select_t;
 
 void gdt_init();
 void gdt_seg_init(seg_desc_t* seg, uint8_t type, uint32_t limit, uint32_t base);
-uint32_t gdt_data_seg_select();
-uint32_t gdt_code_seg_select();
-
+seg_select_t gdt_data_seg_select();
+seg_select_t gdt_code_seg_select();
 
 //------------------------------------------------------------------------------
+//
+// /* Local Descriptor Table */
+// struct ldt {
+//     seg_desc_t code_seg_desc;
+//     seg_desc_t data_seg_desc;
+//     seg_desc_t heap_seg_desc;
+//     seg_desc_t stack_seg_desc;
+// }__attribute__((packed));
+//
+// /* Local Descriptor Table */
+// struct ldtr {
+//     seg_desc_t code_seg_desc;
+//     seg_desc_t data_seg_desc;
+//     seg_desc_t heap_seg_desc;
+//     seg_desc_t stack_seg_desc;
+// }__attribute__((packed));
+//
+// typedef struct ldt ldt_t;
+// typedef struct ldtr ldtr_t;
 
 /* Segment Register */
 // struct seg_register {
@@ -73,6 +88,7 @@ uint32_t gdt_code_seg_select();
     3. get page fault exception with cr2
     4. use cr3 to
     5. set paging mode with cr4 (32-bit paging, PAE paging, IA-32e paging)
+    6. How to construct a ldt table
 */
 
 #endif // __KERNEL_GDT_H__

@@ -13,7 +13,8 @@
 #define SCHEDULER_NBR_TASKS  256
 #define SCHEDULER_TIME_UNIT  1000   // us
 
+void scheduler_init();
 bool_t scheduler_add(task_t* task);
-stack_layout_t* schedule_run(stack_layout_t* stack_layout);
+context_t* schedule_run(context_t* context);
 
 #endif // __KERNEL_SCHEDULER_H__

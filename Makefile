@@ -8,6 +8,7 @@ objects = 	obj/boot/bootloader.o \
 			obj/kernel/gdt.o \
 			obj/kernel/process/task.o \
 			obj/kernel/process/scheduler.o \
+			obj/kernel/memory/paging.o \
 			obj/kernel/memory/memory_manager.o \
 			obj/kernel/interrupt/pic.o \
 			obj/kernel/interrupt/idt.o \
@@ -21,7 +22,8 @@ objects = 	obj/boot/bootloader.o \
 			obj/common/list.o \
 			obj/syscalls/print.o
 
-			#obj/common/hashtable.o 
+			# obj/common/timer.o
+			# obj/common/hashtable.o
 
 run: oslab.iso
 	@(killall VirtualBox && sleep 1) || true
