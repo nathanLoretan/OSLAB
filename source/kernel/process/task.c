@@ -5,24 +5,21 @@
 #include <kernel/process/task.h>
 #include <syscalls/print.h>
 
-void task_init(task_t* task, run_t run, size_t size)
+void task_init(task_t* task, run_t run)
 {
     task->pd = paging_getDirectory();
     task->pt = paging_getTable();
 
     paging_addTableToDirectory(task->pd, task->pt);
 
-    // /!\ the paging must be enabled TODO: adapted with pd
+    // /!\ the paging must be enabled
     // heap and stack addressed to virtual memory regarding the Directory and the table
     task->heap  = (uint8_t*)paging_getVirtualBaseAddr(task->pd);
     task->stack = (uint8_t*)task->heap + (1024 * 0x1000);
     task->context = (context_t*)(task->stack - sizeof(context_t));
 
-    // mm_process_init(&task->memory_manager, task->heap, size);
+    // Configure memory manager for dynamic allocation
     mm_init(&task->memory_manager, task->heap);
-
-    // Context addressed using physical memory of a page
-    // task->context = (context_t*)(paging_alloc(&task->pt[1023]) + 0x1000 - sizeof(context_t));
 
     // cr3 points to the page directory table
     task->context->cr3 = (uint32_t) paging_getPageDirectories();

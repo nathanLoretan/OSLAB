@@ -119,6 +119,6 @@ struct task {
 } __attribute__((packed));
 typedef struct task task_t;
 
-void task_init(task_t* task, run_t run, size_t size);
+void task_init(task_t* task, run_t run);
 
 #endif // __KERNEL_TASK_H__

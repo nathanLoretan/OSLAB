@@ -49,7 +49,9 @@ void kmain(const void* kernel_space)
     printf("Interrupts activated\n");
 
     // Test Function
-    testPaging();
+    // testPaging();
+    // testScheduler();
+    testAlloc();
 
     while(1)
     {
