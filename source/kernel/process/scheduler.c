@@ -12,8 +12,12 @@ task_t* tasks[SCHEDULER_NBR_TASKS];
 
 void scheduler_init()
 {
-    task_t kernel_task;
-    task_init(&kernel_task, NULL, 4096);
+    extern pd_t* kernel_pd;
+    extern pt_t* kernel_pt;
+
+    kernel_task.pd = kernel_pd;
+    kernel_task.pt = kernel_pt;
+
     tasks[0] = &kernel_task;
 }
 
@@ -39,6 +43,8 @@ context_t* schedule_run(context_t* context)
 
     // If the context of the task is not defined TODO: remove the task
     if(tasks[(current_task + 1) % (nbr_task + 1)]->context == NULL) {
+        printf("TASK "); printfHex((current_task + 1) % (nbr_task + 1));
+        printf(" is NULL\n");
         return context;
     }
 
@@ -52,4 +58,9 @@ context_t* schedule_run(context_t* context)
     mm_set(&tasks[current_task]->memory_manager);
 
     return tasks[current_task]->context;
+}
+
+task_t* scheduler_getCurrentTask()
+{
+    return tasks[current_task];
 }

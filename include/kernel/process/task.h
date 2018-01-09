@@ -111,10 +111,11 @@ typedef struct context context_t;
 struct task {
     run_t      run;
     uint8_t*   heap;
-    context_t* context;
+    uint8_t*   stack;
+    context_t* context; 
+    memory_manager_t memory_manager;
     pt_t* pt;
     pd_t* pd;
-    memory_manager_t memory_manager;
 } __attribute__((packed));
 typedef struct task task_t;
 

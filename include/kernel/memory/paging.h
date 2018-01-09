@@ -16,6 +16,9 @@
 #define PAGE_SIZE_4K  0
 #define PAGE_SIZE_4M  1
 
+#define PAGING_BASE_ADDRESS 0x00010000 // Address of the first page, free zone of the RAM
+#define PAGING_SIZE  0x1000
+
 struct pd {
     uint8_t  present        :1;     // Present
     uint8_t  read_write     :1;     // Read/Write (1) / Read-Only (0)
@@ -47,21 +50,22 @@ struct pt {
 typedef struct pd pd_t;
 typedef struct pt pt_t;
 
-// /!\ HERE JUST TO TEST
-pd_t kernel_pd[1024] __attribute__((aligned(4096)));   // Page Directory
-pt_t kernel_pt[1024] __attribute__((aligned(4096)));   // Page Table
-
 void paging_enable();
 void paging_disable();
 
 pd_t* paging_getDirectory();
 pt_t* paging_getTable();
 
-void pd_init(pd_t* pd);
-void pd_add(pd_t* pd, pt_t* pt);
-void pd_select(pd_t* pd);
+pd_t* paging_getKernelDirectory();
+pt_t* paging_getKernelTable();
 
-void pt_init(pt_t* pt);
-uint32_t pt_getAddr(pt_t* pt);
+uint32_t paging_alloc(pt_t* pt);
+void paging_free(pt_t* pt);
+
+void paging_addTableToDirectory(pd_t* pd, pt_t* pt);
+
+uint32_t* paging_getBaseAddr(pd_t* pd);
+uint32_t* paging_getVirtualAddr(uint32_t pd_index, uint32_t pt_index, uint32_t offset);
+uint32_t* paging_getPhysicalAddr(uint32_t* virtualAddr);
 
 #endif // __KERNEL_PAGING_H__

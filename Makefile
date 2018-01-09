@@ -20,7 +20,8 @@ objects = 	obj/boot/bootloader.o \
 			obj/common/queue.o \
 			obj/common/stack.o \
 			obj/common/list.o \
-			obj/syscalls/print.o
+			obj/syscalls/print.o \
+			obj/test/test.o \
 
 			# obj/common/timer.o
 			# obj/common/hashtable.o

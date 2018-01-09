@@ -9,6 +9,7 @@
 #include <common/timer.h>
 #include <drivers/io.h>
 #include <kernel/gdt.h>
+#include <kernel/memory/paging.h>
 #include <kernel/process/scheduler.h>
 #include <kernel/interrupt/idt.h>
 #include <kernel/interrupt/pic.h>

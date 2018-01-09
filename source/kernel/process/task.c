@@ -3,19 +3,30 @@
 */
 
 #include <kernel/process/task.h>
-
-static uint32_t pointer = 0;
+#include <syscalls/print.h>
 
 void task_init(task_t* task, run_t run, size_t size)
 {
-    task->heap  = (uint8_t*)pt_getAddr(&kernel_pt[10 + pointer++]);
+    task->pd = paging_getDirectory();
+    task->pt = paging_getTable();
+
+    paging_addTableToDirectory(task->pd, task->pt);
+
+    // /!\ the paging must be enabled TODO: adapted with pd
+    // heap and stack addressed to virtual memory regarding the Directory and the table
+    task->heap  = (uint8_t*)paging_getBaseAddr(task->pd);
+    task->stack = (uint8_t*)task->heap + (1024 * 0x1000);
 
     // mm_process_init(&task->memory_manager, task->heap, size);
 
-    // Define where to save the cpu registers
-    task->context = (context_t*)(task->heap + 0x1000 - sizeof(context_t));
+    // Context addressed using physical memory of a page
+    // task->context = (context_t*)(paging_alloc(&task->pt[1023]) + 0x1000 - sizeof(context_t));
 
-    task->context->cr3 = (uint32_t) kernel_pd;
+    // Context addressed using virtual memory of a page
+    task->context = (context_t*)(task->stack - sizeof(context_t));
+
+    extern pd_t* page_directories;
+    task->context->cr3 = (uint32_t) page_directories;
 
     // General Purpose Registers
     task->context->eax = 0;
@@ -44,4 +55,6 @@ void task_init(task_t* task, run_t run, size_t size)
 
     // EFLAGS Register
     task->context->eflags = 0x202;
+
+    printf("FINISH\n");
 }

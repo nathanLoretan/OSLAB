@@ -126,7 +126,24 @@ uint32_t exc_handler(uint8_t exc_id, uint32_t esp)
             asm volatile ("movl %%cr2, %0": :"r" (cr2));
             printf("Page Fault: ");
             printfHex32(cr2);
+
+            extern uint8_t current_task;
+
+            printf(" ");
+            printfHex32(current_task);
+
+            // TODO
+            uint8_t entry = (cr2 & 0xFFFFFF000) >> 12;
+            printf(" ");
+            printfHex32(entry);
+            printf(" ");
+            printfHex32((uint32_t)paging_getPhysicalAddr(cr2));
             printf("\n");
+            task_t* task  = scheduler_getCurrentTask();
+            // paging_alloc(&task->pt[entry]);
+
+            asm volatile("invlpg (%0)" ::"r" (cr2) : "memory");
+
         } break;
         // case 0x0F: {   // reserved
         // } break;
