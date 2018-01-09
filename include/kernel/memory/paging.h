@@ -53,6 +53,8 @@ typedef struct pt pt_t;
 void paging_enable();
 void paging_disable();
 
+pd_t* paging_getPageDirectories();
+
 pd_t* paging_getDirectory();
 pt_t* paging_getTable();
 
@@ -64,7 +66,7 @@ void paging_free(pt_t* pt);
 
 void paging_addTableToDirectory(pd_t* pd, pt_t* pt);
 
-uint32_t* paging_getBaseAddr(pd_t* pd);
+uint32_t* paging_getVirtualBaseAddr(pd_t* pd);
 uint32_t* paging_getVirtualAddr(uint32_t pd_index, uint32_t pt_index, uint32_t offset);
 uint32_t* paging_getPhysicalAddr(uint32_t* virtualAddr);
 

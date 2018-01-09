@@ -38,7 +38,7 @@ static void pt_init(pt_t* pt)
     for(uint32_t i = 0; i < 1024; i++)
     {
         pt[i] = (pt_t) {
-                            .present        = 1,
+                            .present        = 0,
                             .read_write     = 1,
                             .privilege      = 0,
                             .write_through  = 0,
@@ -48,9 +48,17 @@ static void pt_init(pt_t* pt)
                             .global         = 0,
                             .available      = 0,
                             .phy_addr       = i,
+
+                            // Not used now because identity mapping -----------
                             // .phy_addr       = paging_getPage() >> 12,
+                            // -------------------------------------------------
                         };
     }
+}
+
+pd_t* paging_getPageDirectories()
+{
+    return page_directories;
 }
 
 void paging_enable()
@@ -77,7 +85,10 @@ pd_t* paging_getKernelDirectory()
 
 pt_t* paging_getKernelTable()
 {
-    pt_t* pt = (pt_t*) paging_getPage(); // TODO: should be static
+    pt_t* pt = (pt_t*) paging_getPage();
+
+    // The physical address used here are from address 0x00000000 (GRUB, MBR),
+    // 0x00100000 (base of the kernel), 0x003FF000
 
     for(uint32_t i = 0; i < 1024; i++)
     {
@@ -91,7 +102,7 @@ pt_t* paging_getKernelTable()
                             .dirty          = 0,
                             .global         = 0,
                             .available      = 0,
-                            .phy_addr       = i,// + 0x0100000, // Physical address of the kernel
+                            .phy_addr       = i,
                         };
     }
 
@@ -122,9 +133,13 @@ pt_t* paging_getTable()
 
 uint32_t paging_alloc(pt_t* pt)
 {
+
     pt->present     = 1;
     pt->read_write  = 1;
-    pt->phy_addr    = paging_getPage() >> 12;
+
+    // Not used now because identity mapping -----------------------------------
+    // pt->phy_addr    = paging_getPage() >> 12;
+    // -------------------------------------------------------------------------
 
     return pt->phy_addr << 12;
 }
@@ -175,7 +190,7 @@ uint32_t* paging_getPhysicalAddr(uint32_t* virtualAddr)
     return (uint32_t*)((pt[pt_index].phy_addr << 12) + offset);
 }
 
-uint32_t* paging_getBaseAddr(pd_t* pd)
+uint32_t* paging_getVirtualBaseAddr(pd_t* pd)
 {
     uint32_t pd_indexes = 0;
 

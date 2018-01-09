@@ -15,18 +15,18 @@ struct frame {
 } __attribute__((packed));
 
 struct memory_manager {
-    size_t         size;
-    struct frame*  first;
+    size_t size;
+    struct frame* first;
 } __attribute__((packed));
 
 typedef struct frame          frame_t;
 typedef struct memory_manager memory_manager_t;
 
-void  mm_init(uint8_t* heap, size_t size);
-void  mm_process_init(memory_manager_t* memory_manager, uint8_t* heap, size_t size);
+void  mm_init(memory_manager_t* memory_manager, uint8_t* heap);
+// void  mm_process_init(memory_manager_t* memory_manager, uint8_t* heap);
 void  mm_set(memory_manager_t* memory_manager);
 
-void* process_malloc(size_t size);
+// void* process_malloc(size_t size);
 void* malloc(size_t size);
 void  free(void* ptr);
 

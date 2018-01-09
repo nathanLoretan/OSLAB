@@ -122,27 +122,24 @@ uint32_t exc_handler(uint8_t exc_id, uint32_t esp)
         // case 0x0D: {   // General protection fault
         // } break;
         case 0x0E: {  // Page fault
+
+            // Get the virtual address which are not bind to physical address
             uint32_t cr2;
-            asm volatile ("movl %%cr2, %0": :"r" (cr2));
-            printf("Page Fault: ");
-            printfHex32(cr2);
+            asm volatile ("movl %%cr2, %0": "=r" (cr2):);
 
-            extern uint8_t current_task;
+            // Get where a page is missing
+            uint32_t pd_index = cr2 >> 22;
+            uint32_t pt_index = (cr2 & 0x0003FF000) >> 12;
+            pd_t* pd = paging_getPageDirectories();
+            pt_t* pt = (pt_t*) (pd[pd_index].pt_addr << 12);
 
-            printf(" ");
-            printfHex32(current_task);
+            // Give a page to fix the page fault
+            paging_alloc(&pt[pt_index]);
 
-            // TODO
-            uint8_t entry = (cr2 & 0xFFFFFF000) >> 12;
-            printf(" ");
-            printfHex32(entry);
-            printf(" ");
-            printfHex32((uint32_t)paging_getPhysicalAddr(cr2));
-            printf("\n");
-            task_t* task  = scheduler_getCurrentTask();
-            // paging_alloc(&task->pt[entry]);
-
-            asm volatile("invlpg (%0)" ::"r" (cr2) : "memory");
+            // Print the different information
+            printf("Page Fault: cr2="); printfHex32(cr2);
+            printf(" pd="); printfHex16(pd_index);
+            printf(" pt="); printfHex16(pt_index); printf("\n");
 
         } break;
         // case 0x0F: {   // reserved

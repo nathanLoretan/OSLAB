@@ -15,8 +15,6 @@
 pd_t* kernel_pd;
 pt_t* kernel_pt;
 
-// TODO:    - determine why pt_init() fail if page not present
-
 void kmain(const void* kernel_space)
 {
     printf("OSLAB Project\n");
@@ -33,9 +31,9 @@ void kmain(const void* kernel_space)
     // kb_init();
     // printf("Keyboard initialized\n");
 
-    uint32_t* memupper = (uint32_t*)(((size_t)kernel_space) + 8);
-    size_t  heap = 10*1024*1024;
-    mm_init((uint8_t*)heap, (*memupper)*1024 - (size_t)heap - 10*1024);
+    // uint32_t* memupper = (uint32_t*)(((size_t)kernel_space) + 8);
+    // size_t  heap = 10*1024*1024;
+    // mm_init((uint8_t*)heap, (*memupper)*1024 - (size_t)heap - 10*1024);
 
     kernel_pt = paging_getKernelTable();
     kernel_pd = paging_getKernelDirectory();
@@ -44,9 +42,6 @@ void kmain(const void* kernel_space)
 
     scheduler_init();
     printf("Scheduler initialized\n");
-
-    // printfHex32((uint32_t)kernel_pd);printf("\n");
-    // printfHex32((uint32_t)kernel_pt);printf("\n");
 
     pit_set_timer(SCHEDULER_TIME_UNIT);
 
