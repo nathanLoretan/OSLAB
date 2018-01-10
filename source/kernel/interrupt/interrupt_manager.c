@@ -134,12 +134,13 @@ uint32_t exc_handler(uint8_t exc_id, uint32_t esp)
             pt_t* pt = (pt_t*) (pd[pd_index].pt_addr << 12);
 
             // Give a page to fix the page fault
-            paging_alloc(&pt[pt_index]);
+            uint32_t phy_addr = paging_alloc(&pt[pt_index]);
 
             // Print the different information
             printf("Page Fault: cr2="); printfHex32(cr2);
             printf(" pd="); printfHex16(pd_index);
-            printf(" pt="); printfHex16(pt_index); printf("\n");
+            printf(" pt="); printfHex16(pt_index);
+            printf(" phy_addr="); printfHex32(phy_addr); printf("\n");
 
         } break;
         // case 0x0F: {   // reserved
@@ -182,7 +183,7 @@ uint32_t isr_handler(uint8_t int_id, uint32_t esp)
     switch(int_id)
     {
         case IRQ_BASE + 0x00: {   // Programmable Interrupt Timer Interrupt
-            esp = (uint32_t)schedule_run((context_t*)esp);
+            esp = (uint32_t)schedule_switchContext((context_t*)esp);
         } break;
         // case IRQ_BASE + 0x01: {   // Keyboard Interrupt
         // } break;

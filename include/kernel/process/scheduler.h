@@ -15,7 +15,7 @@
 
 void scheduler_init();
 bool_t scheduler_add(task_t* task);
-context_t* schedule_run(context_t* context);
+context_t* schedule_switchContext(context_t* context);
 task_t* scheduler_getCurrentTask();
 
 #endif // __KERNEL_SCHEDULER_H__

@@ -47,7 +47,8 @@ static void pt_init(pt_t* pt)
                             .dirty          = 0,
                             .global         = 0,
                             .available      = 0,
-                            .phy_addr       = i,
+                            .phy_addr       = 0,
+                            // .phy_addr       = i,
 
                             // Not used now because identity mapping -----------
                             // .phy_addr       = paging_getPage() >> 12,
@@ -137,8 +138,8 @@ uint32_t paging_alloc(pt_t* pt)
     pt->present     = 1;
     pt->read_write  = 1;
 
-    // Not used now because identity mapping -----------------------------------
-    // pt->phy_addr    = paging_getPage() >> 12;
+    // Not used if identity mapping --------------------------------------------
+    pt->phy_addr    = paging_getPage() >> 12;
     // -------------------------------------------------------------------------
 
     return pt->phy_addr << 12;
@@ -152,21 +153,19 @@ void paging_free(pt_t* pt)
 void paging_addTableToDirectory(pd_t* pd, pt_t* pt)
 {
     // Identity mapping: ONLY FOR TO TEST---------------------------------------
-
-    uint32_t pd_indexes = 0;
-
-    for(int i = 0; i < 1024; i++)
-    {
-        if(pd == &page_directories[i]) {
-            pd_indexes = i;
-            break;
-        }
-    }
-
-    for(int i = 0; i < 1024; i++) {
-        pt[i].phy_addr = pt[i].phy_addr | (pd_indexes << 10);
-    }
-
+    // uint32_t pd_indexes = 0;
+    //
+    // for(int i = 0; i < 1024; i++)
+    // {
+    //     if(pd == &page_directories[i]) {
+    //         pd_indexes = i;
+    //         break;
+    //     }
+    // }
+    //
+    // for(int i = 0; i < 1024; i++) {
+    //     pt[i].phy_addr = i | (pd_indexes << 10);
+    // }
     // -------------------------------------------------------------------------
 
     pd->present     = 1;

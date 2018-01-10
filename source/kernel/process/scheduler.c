@@ -23,6 +23,8 @@ void scheduler_init()
 
 bool_t scheduler_add(task_t* task)
 {
+    // TODO: LOCK
+
     if(nbr_task >= SCHEDULER_NBR_TASKS) {
         return FALSE;
     }
@@ -32,10 +34,14 @@ bool_t scheduler_add(task_t* task)
     tasks[nbr_task] = task;
 
     return TRUE;
+
+    // TODO: UNLOCK
 }
 
-context_t* schedule_run(context_t* context)
+context_t* schedule_switchContext(context_t* context)
 {
+    // TODO: LOCK
+
     // no task, no need to schedule
     if(nbr_task == 0) {
         return context;
@@ -58,6 +64,8 @@ context_t* schedule_run(context_t* context)
     mm_set(&tasks[current_task]->memory_manager);
 
     return tasks[current_task]->context;
+
+    // TODO: UNLOCK
 }
 
 task_t* scheduler_getCurrentTask()
