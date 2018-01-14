@@ -6,6 +6,7 @@
 #define __KERNEL_PAGING_H__
 
 #include <common/types.h>
+#include <lib/stdio.h>
 
 #define PDE_MAX  1024    // Max Page Directory Entries
 #define PTE_MAX  1024    // Max Page Table Entries
@@ -16,7 +17,7 @@
 #define PAGE_SIZE_4K  0
 #define PAGE_SIZE_4M  1
 
-#define PAGING_BASE_ADDRESS 0x00010000 // Address of the first page, free zone of the RAM
+#define PAGING_BASE_ADDRESS 0x000010000 // Address of the first page
 #define PAGING_SIZE  0x1000
 
 struct pd {

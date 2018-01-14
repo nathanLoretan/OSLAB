@@ -7,10 +7,11 @@
 
 #include <common/types.h>
 
+// Programmable Interrupt Controller
 #define PORT_PIC_SLAVE_DATA     0xA1
 #define PORT_PIC_MASTER_DATA    0x21
-#define PORT_PIC_SLAVE_COMMAND  0xA0
-#define PORT_PIC_MASTER_COMMAND 0x20
+#define PORT_PIC_SLAVE_CMD      0xA0
+#define PORT_PIC_MASTER_CMD     0x20
 
 // Programmable Interval Timer
 #define PORT_PIT_CH0        0x40 // Channel 0 data port (read/write)
@@ -21,6 +22,10 @@
 #define PORT_PS2_DATA       0x60 // Read/Write 	Data Port
 #define PORT_PS2_CMD        0x64 // Read Status Register / Write Command Register
 
+#define PORT_PS2_DATA       0x60 // Read/Write 	Data Port
+#define PORT_PS2_CMD        0x64 // Read Status Register / Write Command Register
+
+// Peripheral Componenent Interconnect
 #define PORT_PCI_DATA       0xCFC
 #define PORT_PCI_CMD        0xCF8
 

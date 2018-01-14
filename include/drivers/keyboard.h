@@ -7,7 +7,7 @@
 
 #include <common/types.h>
 #include <drivers/io.h>
-#include <syscalls/print.h>
+#include <lib/stdio.h>
 #include <kernel/interrupt/interrupt_manager.h>
 #include <kernel/interrupt/pic.h>
 

@@ -21,6 +21,6 @@ typedef queue_t eventqueue_t;
 int event_init(event_t* event, event_handler_t handler, size_t data_size, size_t id);
 int eventqueue_init(eventqueue_t* queue, size_t nbr_event, size_t data_size);
 int eventqueue_push(eventqueue_t* queue, event_t* event);
-event_t eventqueue_pop(eventqueue_t* queue);
+event_t* eventqueue_pop(eventqueue_t* queue);
 
 #endif // __COMMON_EVENT_H__

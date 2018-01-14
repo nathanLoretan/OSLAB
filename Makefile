@@ -4,7 +4,7 @@ LDPARAMS = -melf_i386
 
 objects = 	obj/boot/bootloader.o \
 			obj/kernel/kernel.o \
-			obj/kernel/pci.o \
+			obj/drivers/pci.o \
 			obj/kernel/gdt.o \
 			obj/kernel/process/task.o \
 			obj/kernel/process/scheduler.o \
@@ -15,26 +15,30 @@ objects = 	obj/boot/bootloader.o \
 			obj/kernel/interrupt/interrupts.o \
 			obj/kernel/interrupt/interrupt_manager.o \
 			obj/drivers/io.o \
+			obj/drivers/ata.o \
 			obj/drivers/pit.o \
 			obj/drivers/keyboard.o \
 			obj/common/queue.o \
+			obj/common/event.o \
 			obj/common/stack.o \
 			obj/common/list.o \
-			obj/syscalls/print.o \
-			obj/test/test.o \
-
-			# obj/common/timer.o
-			# obj/common/hashtable.o
+			obj/common/timer.o \
+			obj/common/hashtable.o \
+			obj/lib/stdarg.o \
+			obj/lib/stdio.o \
+			obj/lib/stdlib.o \
+			obj/lib/string.o \
+			obj/test/test.o
 
 run: oslab.iso
 	@(killall VirtualBox && sleep 1) || true
 	@VirtualBox --startvm 'OSLAB' &
 
-obj/%.o: source/%.c
+obj/%.o: src/%.c
 	@mkdir -p $(@D)
 	@gcc $(GCCPARAMS) -c -o $@ $<
 
-obj/%.o: source/%.asm
+obj/%.o: src/%.asm
 	@mkdir -p $(@D)
 	@as $(ASPARAMS) -o $@ $<
 

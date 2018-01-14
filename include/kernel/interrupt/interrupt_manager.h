@@ -13,7 +13,7 @@
 #include <kernel/process/scheduler.h>
 #include <kernel/interrupt/idt.h>
 #include <kernel/interrupt/pic.h>
-#include <syscalls/print.h>
+#include <lib/stdio.h>
 
 typedef void (*isr_t)();
 

@@ -1,4 +1,4 @@
-#include <syscalls/print.h>
+#include <lib/stdio.h>
 
 void printf(char* str)
 {

@@ -6,6 +6,7 @@
 #define __KERNEL_TASK_H__
 
 #include <common/types.h>
+#include <lib/stdio.h>
 #include <kernel/gdt.h>
 #include <kernel/memory/paging.h>
 #include <kernel/memory/memory_manager.h>
@@ -112,8 +113,8 @@ struct task {
     run_t      run;
     uint8_t*   heap;
     uint8_t*   stack;
-    context_t* context; 
-    memory_manager_t memory_manager;
+    context_t* context;
+    memoryManager_t memoryManager;
     pt_t* pt;
     pd_t* pd;
 } __attribute__((packed));

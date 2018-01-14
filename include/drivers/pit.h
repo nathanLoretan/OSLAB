@@ -7,7 +7,7 @@
 
 #include <common/types.h>
 #include <drivers/io.h>
-#include <syscalls/print.h>
+#include <lib/stdio.h>
 
 #define PIT_CLK             1193182 //  1.193182 MHz
 #define PIT_MIN_INTERVAL    1       // us (really 838ns)

@@ -6,6 +6,7 @@
 #define __KERNEL_SCHEDULER_H__
 
 #include <common/types.h>
+#include <lib/stdio.h>
 #include <kernel/gdt.h>
 #include <kernel/process/task.h>
 #include <kernel/memory/memory_manager.h>

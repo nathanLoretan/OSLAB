@@ -22,7 +22,7 @@ typedef struct timer {
     event_t* event;
 } timer_t;
 
-void timer_init(timer_t* timer, eventqueue_t* queue, event_t event,
+void timer_init(timer_t* timer, eventqueue_t* queue, event_t* event,
                 size_t interval, bool_t periodic, size_t id);
 void timer_start(timer_t* timer);
 void timer_stop(timer_t* timer);
