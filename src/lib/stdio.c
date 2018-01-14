@@ -85,8 +85,6 @@ void print(const char* str, size_t nbr_args, ...)
     va_list vl;
     uint32_t arg_idx = 0;   // argument index
 
-    pHex32(nbr_args); pChar(' ');
-
     va_start(vl, nbr_args);
 
     // Parse the string to find the different element
