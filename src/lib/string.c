@@ -1,5 +1,26 @@
 #include <lib/string.h>
 
+void* memset(void* ptr, int value, size_t num)
+{
+    bool_t isOdd  = num % 2;
+    size_t middle = num / 2;
+
+    uint8_t* ptr_8b = (uint8_t*) ptr;
+
+    for(size_t i = 0; i < middle; i++)
+    {
+        ptr_8b[i] = value;
+        ptr_8b[num - i - 1] = value;
+    }
+
+    if(isOdd)
+    {
+        ptr_8b[middle] = value;
+    }
+
+    return (void*) ptr;
+}
+
 void* memcpy(void* dest, const void* src, size_t num)
 {
     bool_t isOdd  = num % 2;
@@ -19,7 +40,7 @@ void* memcpy(void* dest, const void* src, size_t num)
         ptr1[middle] = ptr2[middle];
     }
 
-    return (void*) ptr1;
+    return (void*) dest;
 }
 
 char* strcpy(char* dest, const char* src)

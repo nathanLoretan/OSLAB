@@ -6,6 +6,7 @@
 #define __COMMON_list_H__
 
 #include <common/types.h>
+#include <lib/string.h>
 #include <kernel/memory/memory_manager.h>
 
 typedef struct list_obj {

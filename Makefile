@@ -4,7 +4,6 @@ LDPARAMS = -melf_i386
 
 objects = 	obj/boot/bootloader.o \
 			obj/kernel/kernel.o \
-			obj/drivers/pci.o \
 			obj/kernel/gdt.o \
 			obj/kernel/process/task.o \
 			obj/kernel/process/scheduler.o \
@@ -17,6 +16,9 @@ objects = 	obj/boot/bootloader.o \
 			obj/drivers/io.o \
 			obj/drivers/ata.o \
 			obj/drivers/pit.o \
+			obj/drivers/pci.o \
+			obj/drivers/sata.o \
+			obj/drivers/drivers.o \
 			obj/drivers/keyboard.o \
 			obj/common/queue.o \
 			obj/common/event.o \
