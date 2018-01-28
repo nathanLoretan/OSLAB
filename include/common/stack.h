@@ -11,13 +11,13 @@
 typedef struct stack {
     size_t    top;
     size_t    bottom;
-    size_t    stack_size;
+    size_t    STACK_SIZE;
     size_t    data_size;
     uint8_t*  data;
     uint8_t*  stack;
 } stack_t;
 
-int stack_init(stack_t* stack, size_t stack_size, size_t data_size);
+int stack_init(stack_t* stack, size_t STACK_SIZE, size_t data_size);
 
 uint8_t* stack_pop(stack_t* stack);
 int stack_push(stack_t* stack, uint8_t* data);

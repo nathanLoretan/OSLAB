@@ -7,6 +7,7 @@
 
 #include <common/types.h>
 #include <drivers/io.h>
+#include <kernel/memory/memory_layout.h>
 
 #define EXC_BASE        0x00
 #define IRQ_BASE        0x20

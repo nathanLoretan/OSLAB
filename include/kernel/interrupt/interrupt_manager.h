@@ -20,6 +20,7 @@ typedef void (*isr_t)();
 void im_init();
 void im_enable_interrupt();
 void im_disable_interrupt();
+
 void im_subscribe(isr_t handler, uint8_t interrupt);
 isr_t im_queue_get();
 volatile bool_t im_queue_isEmpty();

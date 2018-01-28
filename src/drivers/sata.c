@@ -524,7 +524,7 @@ void ahci_searchPort(hba_mem_t* abar)
 int sata_read28(uint8_t port_nbr, uint32_t lba, uint32_t sectorCnt, uint16_t* data)
 {
 	// TODO timeout
-	int spin = 0; // Spin lock timeout counter
+	uint32_t spin = 0; // Spin lock timeout counter
 
 	// Disable paging to use memory mapped hardware register
 	paging_disable();
@@ -584,90 +584,18 @@ int sata_read28(uint8_t port_nbr, uint32_t lba, uint32_t sectorCnt, uint16_t* da
 
 	cmdfis->countl =  sectorCnt & 0xFF;
 
-	//=========================================================================
-	// Indicate that the command may be send to the device
-	// port->ci |= 1 << slot;
-
-	// // Go to state StartComm
-	// port->sctl &= ~HBA_PxSCTL_DET;
-	// port->cmd  &= ~HBA_PxCMD_SUD;
-	// port->sctl |= HBA_PxSCTL_DET;
-	// port->cmd  |= HBA_PxCMD_SUD;
-	//
-	//
-	// // Go to state RegFisPostToMem
-	// port->serr &= ~HBA_PxSERR_DIAG_X;
-	// port->cmd  &= ~HBA_PxCMD_FRE;
-	// port->cmd  |= HBA_PxCMD_FRE;
-	//==========================================================================
-
-	// // Assume that port is in state P:idle
-	// port->ci |= 1 << slot; // P:idle -> P:SelectCmd -> P:FetchCmd
-
-	// Assume that port is in state P:NotRunning
-	// port->sctl |= HBA_PxSCTL_DET;
-	// port->cmd  |= HBA_PxCMD_SUD;
-
-	// port->cmd |= HBA_PxCMD_ST;  // Process the command list
-
-	// printf("%32x, %32x\n", port->cmd, HBA_PxCMD_ST);
-	// printf("%32x %32x, %32x\n", port->tfd, ATA_STATUS_BSY, ATA_STATUS_DRQ);
-
 	// Assume that port is in state FB:idle
 	port->ci |= 1 << slot; // FB:SelectDevice -> SelectCmd -> FetchCmd ->idle
 
 	// Poll the command port until BSY and DRQ bit aer clear or timeout
-	while((port->tfd & ATA_STATUS_BSY) && spin < 1000000) {}
-
-	// printf("%32x\n", port->cmd & HBA_PxCMD_CR);
-
-	// // Poll the command port until BSY and DRQ bit aer clear or timeout
-	// while((port->tfd & (ATA_STATUS_BSY | ATA_STATUS_DRQ)) &&
-	// 	 !(port->tfd & ATA_STATUS_ERR) && spin < 1000000)
-	// {
-	// 	printf("%32x\n", spin++);
-	// }
-	//
-	// if(port->tfd & ATA_STATUS_ERR) {
-	// 	paging_enable();
-	// 	return -1;
-	// }
+	while((port->tfd & ATA_STATUS_BSY) && spin < 1000000) {spin++;}
 
 	// If timeout
 	if (spin >= 1000000)
 	{
 		paging_enable();
-		return -2;
+		return -1;
 	}
-
-	//  port->ci |= 1 << slot;
-
-	// HBA clears PxCi when the command in the slot is finished
-	// spin = 0;
-	// while((port->ci & (1 << slot)) == 0  && spin < 1000000)
-	// {
-	// 	if (port->is & HBA_PxIS_TFES)
-	// 	{
-	// 		paging_enable();
-	// 		return -3;
-	// 	}
-	//
-	// 	spin++;
-	// }
-	//
-	// // If timeout
-	// if (spin >= 1000000)
-	// {
-	// 	paging_enable();
-	// 	return -4;
-	// }
-	//
-	// // Check again
-	// if (port->is & HBA_PxIS_TFES)
-	// {
-	// 	paging_enable();
-	// 	return -5;
-	// }
 
 	paging_enable();
 	return 0;
@@ -676,7 +604,7 @@ int sata_read28(uint8_t port_nbr, uint32_t lba, uint32_t sectorCnt, uint16_t* da
 int sata_write28(uint8_t port_nbr, uint32_t lba, uint32_t sectorCnt, uint16_t* data)
 {
 	// TODO timeout
-	int spin = 0; // Spin lock timeout counter
+	uint32_t spin = 0; // Spin lock timeout counter
 
 	// Disable paging to use memory mapped hardware register
 	paging_disable();
@@ -746,11 +674,16 @@ int sata_write28(uint8_t port_nbr, uint32_t lba, uint32_t sectorCnt, uint16_t* d
 	if (spin >= 1000000)
 	{
 		paging_enable();
-		return -2;
+		return -1;
 	}
 
 	paging_enable();
 	return 0;
+}
+
+void sata_clearInterrupt()
+{
+	abar->is   = 0xFFFFFFFF; // Clear pending interrupt
 }
 
 int sata_init()

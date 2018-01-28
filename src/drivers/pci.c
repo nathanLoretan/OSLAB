@@ -139,8 +139,9 @@ void pci_init()
                 pci_get_config_data(&dev);
 
                 if(dev.config_data.vendor_id == 0x0000 ||
-                   dev.config_data.vendor_id == 0xFFFF)
+                   dev.config_data.vendor_id == 0xFFFF) {
                     continue; // Look for next functions of the device
+                }
 
                 drivers_store(&dev);
 

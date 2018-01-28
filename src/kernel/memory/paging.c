@@ -4,16 +4,22 @@
 
 #include <kernel/memory/paging.h>
 
-size_t page_ptr = 0;
-size_t pd_ptr = 1;
-pd_t* page_directories = NULL;
+#define PAGING_SIZE  0x1000 // 4kB
 
-uint32_t paging_getPage()
+size_t pd_uPtr = (USER_BASE >> 22);
+size_t pd_kPtr = (KERNEL_BASE >> 22);
+
+size_t page_uPtr = 0;
+
+extern pd_t pageDirectory;  // /!\ Define in load.asm
+extern pt_t kPageTable;     // /!\ Define in load.asm
+
+static uint32_t paging_getPage()
 {
-    return (PAGING_BASE_ADDRESS + (PAGING_SIZE * page_ptr++));
+    return (PAGING_START + (PAGING_SIZE * page_uPtr++));
 }
 
-static void pd_init(pd_t* pd)
+void pd_init(pd_t* pd)
 {
     for(uint32_t i = 0; i < 1024; i++)
     {
@@ -32,7 +38,7 @@ static void pd_init(pd_t* pd)
     }
 }
 
-static void pt_init(pt_t* pt)
+void pt_init(pt_t* pt)
 {
     for(uint32_t i = 0; i < 1024; i++)
     {
@@ -56,80 +62,134 @@ static void pt_init(pt_t* pt)
     }
 }
 
-pd_t* paging_getPageDirectories()
+pd_t* paging_getPageDirectoryTable()
 {
-    return page_directories;
+    return &pageDirectory;
 }
 
 void paging_enable()
 {
-    uint32_t cr3 = (uint32_t) page_directories & 0xFFFFF000;
+    // task_t* task = scheduler_getCurrentTask();
+    //
+    // if(task != NULL) {
+    //     task->isPagingEnabled = TRUE;
+    // }
+
+    uint32_t cr3 = (uint32_t) (&pageDirectory) & 0xFFFFF000;
     asm volatile ("movl %%eax, %%cr3" :: "a" (cr3));
     asm volatile ("movl %cr0, %eax; orl $0x80000001, %eax; movl %eax, %cr0;");
 }
 
 void paging_disable()
 {
+    // task_t* task; = scheduler_getCurrentTask();
+    //
+    // if(task != NULL) {
+    //     task->isPagingEnabled = FALSE;
+    // }
+
     asm volatile ("movl %cr0, %eax; andl $0x7FFFFFFF, %eax; movl %eax, %cr0;");
 }
 
-pd_t* paging_getKernelDirectory()
+// pd_t* paging_getKernelDirectory()
+// {
+//     // if(pageDirectory == NULL) {
+//     //     pageDirectory = (pd_t*) paging_getPage();
+//     //     pd_init(pageDirectory);
+//     // }
+//
+//     // Return the address
+//     return &pageDirectory[pd_kPtr++];
+// }
+//
+// pt_t* paging_getKernelTable()
+// {
+//     pt_t* pt = (pt_t*) paging_getPage();
+//
+//     // The physical address used here are from address 0x00000000 (GRUB, MBR),
+//     // 0x00100000 (base of the kernel), 0x003FF000
+//
+//     for(uint32_t i = 0; i < 1024; i++)
+//     {
+//         pt[i] = (pt_t) {
+//                             .present        = 1,
+//                             .read_write     = 1,
+//                             .privilege      = 0,
+//                             .write_through  = 0,
+//                             .cache_disable  = 0,
+//                             .accessed       = 0,
+//                             .dirty          = 0,
+//                             .global         = 0,
+//                             .available      = 0,
+//                             .phy_addr       = i,
+//                         };
+//     }
+//
+//     return pt;
+// }
+
+pd_t* paging_kGetDirectory()
 {
-    if(page_directories == NULL) {
-        page_directories = (pd_t*) paging_getPage();
-        pd_init(page_directories);
+    // if(pageDirectory == NULL) {
+    //     pageDirectory = (pd_t*) paging_getPage();
+    //     pd_init(pageDirectory);
+    // }
+
+    pd_t* pd = &pageDirectory;
+
+    // Avoid to return the page index used to map the kernel at boot
+    if(pd_kPtr == 0) {
+        pd_kPtr++;
     }
 
-    return &page_directories[0];
+    return &pd[pd_uPtr++];
 }
 
-pt_t* paging_getKernelTable()
+pd_t* paging_uGetDirectory()
 {
-    pt_t* pt = (pt_t*) paging_getPage();
+    // if(pageDirectory == NULL) {
+    //     pageDirectory = (pd_t*) paging_getPage();
+    //     pd_init(pageDirectory);
+    // }
 
-    // The physical address used here are from address 0x00000000 (GRUB, MBR),
-    // 0x00100000 (base of the kernel), 0x003FF000
+    // Avoid to return &pageDirectory[0] which is kernel Directory
+    // if(pd_uPtr == 0) {
+    //     pd_uPtr++;
+    // }
 
-    for(uint32_t i = 0; i < 1024; i++)
-    {
-        pt[i] = (pt_t) {
-                            .present        = 1,
-                            .read_write     = 1,
-                            .privilege      = 0,
-                            .write_through  = 0,
-                            .cache_disable  = 0,
-                            .accessed       = 0,
-                            .dirty          = 0,
-                            .global         = 0,
-                            .available      = 0,
-                            .phy_addr       = i,
-                        };
+    pd_t* pd = &pageDirectory;
+
+    return &pd[pd_uPtr++];
+}
+
+pd_t* paging_searchDirectory(uint32_t pd_index)
+{
+    pd_t* pd = (pd_t*) &pageDirectory;
+
+    if(!pd[pd_index].present) {
+        return NULL;
     }
 
-    return pt;
+    return &pd[pd_index];
 }
 
-pd_t* paging_getDirectory()
+pt_t* paging_searchTable(uint32_t pd_index)
 {
-    if(page_directories == NULL) {
-        page_directories = (pd_t*) paging_getPage();
-        pd_init(page_directories);
+    pd_t* pd = (pd_t*) &pageDirectory;
+
+    if(!pd[pd_index].present || !pd[pd_index].pt_addr) {
+        return NULL;
     }
 
-    // Avoid to return &page_directories[0] which is kernel Directory
-    if(pd_ptr == 0) {
-        pd_ptr++;
-    }
-
-    return &page_directories[pd_ptr++];
+    return (pt_t*) (pd[pd_index].pt_addr << 12);
 }
 
-pt_t* paging_getTable()
-{
-    pt_t* pt = (pt_t*) paging_getPage();
-    pt_init(pt);
-    return pt;
-}
+// pt_t* paging_getTable()
+// {
+//     pt_t* pt = (pt_t*) paging_getPage();
+//     pt_init(pt);
+//     return pt;
+// }
 
 uint32_t paging_alloc(pt_t* pt)
 {
@@ -146,27 +206,11 @@ uint32_t paging_alloc(pt_t* pt)
 
 void paging_free(pt_t* pt)
 {
-
+    // TODO
 }
 
 void paging_addTableToDirectory(pd_t* pd, pt_t* pt)
 {
-    // Identity mapping: ONLY FOR TO TEST---------------------------------------
-    // uint32_t pd_indexes = 0;
-    //
-    // for(int i = 0; i < 1024; i++)
-    // {
-    //     if(pd == &page_directories[i]) {
-    //         pd_indexes = i;
-    //         break;
-    //     }
-    // }
-    //
-    // for(int i = 0; i < 1024; i++) {
-    //     pt[i].phy_addr = i | (pd_indexes << 10);
-    // }
-    // -------------------------------------------------------------------------
-
     pd->present     = 1;
     pd->read_write  = 1;
     pd->pt_addr     = (uint32_t)pt >> 12;
@@ -179,22 +223,25 @@ uint32_t* paging_getVirtualAddr(uint32_t pd_index, uint32_t pt_index, uint32_t o
 
 uint32_t* paging_getPhysicalAddr(uint32_t* virtualAddr)
 {
+    pd_t* pd = &pageDirectory;
+
     uint32_t pd_index = (uint32_t)virtualAddr >> 22;
     uint32_t pt_index = (uint32_t)virtualAddr >> 12 & 0x03FF;
     uint32_t offset   = (uint32_t)virtualAddr & 0xFFF;
 
-    pt_t* pt = (pt_t*) (page_directories[pd_index].pt_addr << 12);
+    pt_t* pt = (pt_t*) (pd[pd_index].pt_addr << 12);
 
     return (uint32_t*)((pt[pt_index].phy_addr << 12) + offset);
 }
 
 uint32_t* paging_getVirtualBaseAddr(pd_t* pd)
 {
+    pd_t* pd_cmp = &pageDirectory;
     uint32_t pd_indexes = 0;
 
     for(int i = 0; i < 1024; i++)
     {
-        if(pd == &page_directories[i]) {
+        if(pd == &pd_cmp[i]) {
             pd_indexes = i;
             break;
         }

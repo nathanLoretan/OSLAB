@@ -53,11 +53,11 @@
 
 #define ATA_PIO_SECTOR_SIZE 512
 
-volatile bool_t isAtaPriReady;
-volatile bool_t isAtaSecReady;
+volatile bool_t isAtaReady[4];
 
 int ata_identify(uint8_t type)
 {
+    uint32_t spin = 0; // Spin lock timeout counter TODO: timeout
     uint8_t status = 0;
 
     uint16_t base = (type & 0x02) ? PORT_ATA_SEC       : PORT_ATA_PRI;
@@ -76,17 +76,24 @@ int ata_identify(uint8_t type)
 
     // Need to read the status once to clear the interrupt flag of the disk
     status = io_read8(base + PORT_ATA_CMD);
-    (type & 0x02) ? (isAtaSecReady = FALSE) : (isAtaPriReady = FALSE);
+    // (type & 0x02) ? (isAtaSecReady = FALSE) : (isAtaPriReady = FALSE);
 
     io_write8(base + PORT_ATA_DRIVE, role);
     io_write8(base + PORT_ATA_SECTOR_CNT, 0);
     io_write8(base + PORT_ATA_LBA0, 0);
     io_write8(base + PORT_ATA_LBA1, 0);
     io_write8(base + PORT_ATA_LBA2, 0);
+
+    isAtaReady[type] = FALSE;
     io_write8(base + PORT_ATA_CMD, ATA_CMD_IDENTIFY);
 
     // Wait the interrupt from the ATA device
-    while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
+    // while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
+    while(!isAtaReady[type] && spin < 1000000){spin++;}
+
+    if(spin >= 1000000) {
+        return -1;
+    }
 
     // Check if the hard drive exists
     status = io_read8(base + PORT_ATA_CMD);
@@ -116,6 +123,7 @@ int ata_identify(uint8_t type)
 
 int ata_read28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
 {
+    uint32_t spin = 0; // Spin lock timeout counter TODO: timeout
     uint8_t status = 0;
 
     uint8_t  role = (type & 0x01) ? ATA_SLAVE    : ATA_MASTER;
@@ -128,7 +136,7 @@ int ata_read28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
 
     // Need to read the status once to clear the interrupt flag of the disk
     status = io_read8(base + PORT_ATA_CMD);
-    (type & 0x02) ? (isAtaSecReady = FALSE) : (isAtaPriReady = FALSE);
+    // (type & 0x02) ? (isAtaSecReady = FALSE) : (isAtaPriReady = FALSE);
 
     io_write8(base + PORT_ATA_DRIVE, role  | ((sector & 0x0F000000) >> 24));
     io_write8(base + PORT_ATA_ERROR, 0);
@@ -136,10 +144,17 @@ int ata_read28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
     io_write8(base + PORT_ATA_LBA0,  sector & 0x000000FF);
     io_write8(base + PORT_ATA_LBA1, (sector & 0x0000FF00) >> 8);
     io_write8(base + PORT_ATA_LBA2, (sector & 0x00FF0000) >> 16);
+
+    isAtaReady[type] = FALSE;
     io_write8(base + PORT_ATA_CMD, ATA_CMD_READ_PIO);
 
     // Wait the interrupt from the ATA device
-    while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
+    // while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
+    while(!isAtaReady[type] && spin < 1000000){spin++;}
+
+    if(spin >= 1000000) {
+        return -1;
+    }
 
     // Check if the hard drive exists
     status = io_read8(base + PORT_ATA_CMD);
@@ -188,6 +203,7 @@ int ata_read28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
 
 int ata_write28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
 {
+    uint32_t spin = 0; // Spin lock timeout counter TODO: timeout
     uint8_t status = 0;
 
     uint8_t  role = (type & 0x01) ? ATA_SLAVE    : ATA_MASTER;
@@ -200,7 +216,7 @@ int ata_write28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
 
     // Need to read the status once to clear the interrupt flag of the disk
     status = io_read8(base + PORT_ATA_CMD);
-    (type & 0x02) ? (isAtaSecReady = FALSE) : (isAtaPriReady = FALSE);
+    // (type & 0x02) ? (isAtaSecReady = FALSE) : (isAtaPriReady = FALSE);
 
     io_write8(base + PORT_ATA_DRIVE, role  | ((sector & 0x0F000000) >> 24));
     io_write8(base + PORT_ATA_ERROR, 0);
@@ -208,6 +224,8 @@ int ata_write28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
     io_write8(base + PORT_ATA_LBA0,  sector & 0x000000FF);
     io_write8(base + PORT_ATA_LBA1, (sector & 0x0000FF00) >> 8);
     io_write8(base + PORT_ATA_LBA2, (sector & 0x00FF0000) >> 16);
+
+    isAtaReady[type] = FALSE;
     io_write8(base + PORT_ATA_CMD, ATA_CMD_WRITE_PIO);
 
     // Check if the hard drive exists
@@ -249,7 +267,12 @@ int ata_write28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
     }
 
     // Wait the interrupt from the ATA device
-    while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
+    // while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
+    while(!isAtaReady[type] && spin < 1000000){spin++;}
+
+    if(spin >= 1000000) {
+        return -1;
+    }
 
     // Check if the hard drive exists
     status = io_read8(base + PORT_ATA_CMD);
@@ -267,6 +290,7 @@ int ata_write28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
 
 int ata_flush(uint8_t type)
 {
+    uint32_t spin = 0; // Spin lock timeout counter TODO: timeout
     uint8_t status = 0;
 
     uint8_t  role = (type & 0x01) ? ATA_SLAVE    : ATA_MASTER;
@@ -274,13 +298,20 @@ int ata_flush(uint8_t type)
 
     // Need to read the status once to clear the interrupt flag of the disk
     status = io_read8(base + PORT_ATA_CMD);
-    (type & 0x02) ? (isAtaSecReady = FALSE) : (isAtaPriReady = FALSE);
+    // (type & 0x02) ? (isAtaSecReady = FALSE) : (isAtaPriReady = FALSE);
 
     io_write8(base + PORT_ATA_DRIVE, role);
+
+    isAtaReady[type] = FALSE;
     io_write8(base + PORT_ATA_CMD, ATA_CMD_CACHE_FLUSH);
 
     // Wait the interrupt from the ATA device
-    while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
+    // while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
+    while(!isAtaReady[type] && spin < 1000000){spin++;}
+
+    if(spin >= 1000000) {
+        return -1;
+    }
 
     // Check if the hard drive exists
     status = io_read8(base + PORT_ATA_CMD);

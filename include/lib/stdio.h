@@ -17,7 +17,6 @@
 // The define allow to get the exact number of argument given to the Function
 // printf. The function can't have more than 20 argument
 #define printf(str, ...)    print(str, COUNT_VARARGS(__VA_ARGS__) , ##__VA_ARGS__)
-
 void print(const char* str, size_t nbr_args, ...);
 
 #endif // __LIB_STDIO_H__

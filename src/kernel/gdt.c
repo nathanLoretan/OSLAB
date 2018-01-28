@@ -3,38 +3,47 @@
 */
 
 #include <kernel/gdt.h>
+#include <lib/stdio.h>
 
 /* Global Descriptor Table */
 struct gdt {
-    seg_desc_t null_seg_desc;
-    seg_desc_t unused_seg_desc;
-    seg_desc_t code_seg_desc;
-    seg_desc_t data_seg_desc;
+    seg_desc_t null_segDesc;
+    // seg_desc_t nused_segDesc;
+    seg_desc_t kCode_segDesc;
+    seg_desc_t kData_segDesc;
+    seg_desc_t uCode_segDesc;
+    seg_desc_t uData_segDesc;
 }__attribute__((packed));
+typedef struct gdt  gdt_t;
 
+/* Global Descriptor Table Register */
 struct gdtr {
     uint16_t size;
-    uint32_t offset;
+    uint32_t offset;    // the linear address of the table
 }__attribute__((packed));
-
-typedef struct gdt gdt_t;
 typedef struct gdtr gdtr_t;
 
 gdt_t gdt;
-uint8_t ldt_indexe_entry = 0;
+gdtr_t gdt_descriptor;
+
+extern void gdt_flush(uint32_t);
 
 void gdt_init()
 {
-    gdt_seg_init(&gdt.null_seg_desc, 0, 0, 0);
-    gdt_seg_init(&gdt.unused_seg_desc, 0, 0, 0);
-    gdt_seg_init(&gdt.data_seg_desc, DATA_SEGMENT, 0xFFFFFFFF, 0);
-    gdt_seg_init(&gdt.code_seg_desc, CODE_SEGMENT, 0xFFFFFFFF, 0);
+    gdt_seg_init(&gdt.null_segDesc,  0, 0, 0);
+    // gdt_seg_init(&gdt.nused_segDesc, 0, 0, 0);
+    gdt_seg_init(&gdt.kCode_segDesc, KCODE_SEG, KCODE_SEG_LIMIT, KDATA_SEG_BASE);
+    gdt_seg_init(&gdt.kData_segDesc, KDATA_SEG, KDATA_SEG_LIMIT, KCODE_SEG_BASE);
+    gdt_seg_init(&gdt.uCode_segDesc, UCODE_SEG, UCODE_SEG_LIMIT, UCODE_SEG_BASE);
+    gdt_seg_init(&gdt.uData_segDesc, UDATA_SEG, UDATA_SEG_LIMIT, UDATA_SEG_BASE);
 
-    // Load the GDT using the LGDT assembly instruction.
-    gdtr_t gdt_descriptor;
-    gdt_descriptor.size   = sizeof(gdt);
+    // asm volatile("lgdt (%0)": :"p" (&gdt_descriptor));
+
+    gdt_descriptor.size   = sizeof(gdt) - 1;
     gdt_descriptor.offset = (uint32_t) &gdt;
-    asm volatile("lgdt (%0)": :"p" (&gdt_descriptor));
+
+    // When writting in lgdt register, the segement must be reload
+    gdt_flush((uint32_t)&gdt_descriptor);
 }
 
 void gdt_seg_init(seg_desc_t* seg, uint8_t type, uint32_t limit, uint32_t base)
@@ -70,26 +79,50 @@ void gdt_seg_init(seg_desc_t* seg, uint8_t type, uint32_t limit, uint32_t base)
     seg->base_3 = (base >> 24) & 0xFF;
 }
 
-seg_select_t gdt_data_seg_select()
+seg_select_t gdt_kData_segSelect()
 {
     seg_select_t seg_select  = {
         .privilege  = 0,
         .table      = 0,
-        .index      = ((uint8_t*)&gdt.data_seg_desc - (uint8_t*)&gdt) >> 3,
+        .index      = ((uint8_t*)&gdt.kData_segDesc - (uint8_t*)&gdt) >> 3,
     };
 
     return seg_select;
-    // return (uint8_t*)&gdt.data_seg_desc - (uint8_t*)&gdt;
+    // return (uint8_t*)&gdt.data_segDesc - (uint8_t*)&gdt;
 }
 
-seg_select_t gdt_code_seg_select()
+seg_select_t gdt_kCode_segSelect()
 {
     seg_select_t seg_select = {
         .privilege  = 0,
         .table      = 0,
-        .index      = ((uint8_t*)&gdt.code_seg_desc - (uint8_t*)&gdt) >> 3,
+        .index      = ((uint8_t*)&gdt.kCode_segDesc - (uint8_t*)&gdt) >> 3,
     };
 
     return seg_select;
-    // return (uint8_t*)&gdt.code_seg_desc - (uint8_t*)&gdt;
+    // return (uint8_t*)&gdt.code_segDesc - (uint8_t*)&gdt;
+}
+
+seg_select_t gdt_uData_segSelect()
+{
+    seg_select_t seg_select  = {
+        .privilege  = 3,
+        .table      = 0,
+        .index      = ((uint8_t*)&gdt.uData_segDesc - (uint8_t*)&gdt) >> 3,
+    };
+
+    return seg_select;
+    // return (uint8_t*)&gdt.data_segDesc - (uint8_t*)&gdt;
+}
+
+seg_select_t gdt_uCode_segSelect()
+{
+    seg_select_t seg_select = {
+        .privilege  = 3,
+        .table      = 0,
+        .index      = ((uint8_t*)&gdt.uCode_segDesc - (uint8_t*)&gdt) >> 3,
+    };
+
+    return seg_select;
+    // return (uint8_t*)&gdt.code_segDesc - (uint8_t*)&gdt;
 }

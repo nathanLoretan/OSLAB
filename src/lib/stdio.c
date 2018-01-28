@@ -1,6 +1,6 @@
 #include <lib/stdio.h>
+#include <kernel/memory/memory_layout.h>
 
-#define VIDEO_MEMORY    0x000B8000
 #define SCREEN_WIDTH   80
 #define SCREEN_HEIGHT  25
 
@@ -90,6 +90,16 @@ void print(const char* str, size_t nbr_args, ...)
     // Parse the string to find the different element
     for(size_t i = 0;  str[i] != '\0'; i++)
     {
+        if(str[i] == '%' && str[i+1] == 'p' && arg_idx < nbr_args) {
+            pHex32(va_arg(vl, uint32_t)); // Print the argument
+            i+=2;                         // Correct the index of the string
+            arg_idx++;
+        }
+        if(str[i] == '%' && str[i+1] == 's' && arg_idx < nbr_args) {
+            pText(va_arg(vl, char*));     // Print the argument
+            i+=2;                         // Correct the index of the string
+            arg_idx++;
+        }
         if(str[i] == '%' && str[i+1] == 'x' && arg_idx < nbr_args) {
             pHex32(va_arg(vl, uint32_t)); // Print the argument
             i+=2;                         // Correct the index of the string
@@ -112,6 +122,10 @@ void print(const char* str, size_t nbr_args, ...)
         }
         else {
             pChar(str[i]);
+        }
+
+        if(str[i] == '\0') {
+            break;
         }
     }
 

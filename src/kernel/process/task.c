@@ -4,6 +4,11 @@
 
 #include <kernel/process/task.h>
 
+void task_start()
+{
+    // Manage the lifetime of a task here
+}
+
 void task_init(task_t* task, run_t run)
 {
     task->pd = paging_getDirectory();
@@ -21,7 +26,7 @@ void task_init(task_t* task, run_t run)
     mm_init(&task->memoryManager, task->heap);
 
     // cr3 points to the page directory table
-    task->context->cr3 = (uint32_t) paging_getPageDirectories();
+    task->context->cr3 = (uint32_t) paging_getPageDirectoryTable();
 
     // General Purpose Registers
     task->context->eax = 0;
@@ -29,11 +34,12 @@ void task_init(task_t* task, run_t run)
     task->context->ecx = 0;
     task->context->edx = 0;
 
-    seg_select_t code_seg = gdt_code_seg_select();
+    seg_select_t code_seg = gdt_uCode_segSelect();
+    seg_select_t data_seg = gdt_uData_segSelect();
 
     // Segment Registers
     task->context->cs = *(uint32_t*)&code_seg;
-    // task->context->ds = ;
+    task->context->ds = *(uint32_t*)&data_seg;
     // task->context->es = ;
     // task->context->ss = ;
     // task->context->fs = ;

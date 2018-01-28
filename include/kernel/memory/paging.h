@@ -5,8 +5,9 @@
 #ifndef __KERNEL_PAGING_H__
 #define __KERNEL_PAGING_H__
 
-#include <common/types.h>
 #include <lib/stdio.h>
+#include <common/types.h>
+#include <kernel/memory/memory_layout.h>
 
 #define PDE_MAX  1024    // Max Page Directory Entries
 #define PTE_MAX  1024    // Max Page Table Entries
@@ -16,9 +17,6 @@
 
 #define PAGE_SIZE_4K  0
 #define PAGE_SIZE_4M  1
-
-#define PAGING_BASE_ADDRESS 0x000010000 // Address of the first page
-#define PAGING_SIZE  0x1000
 
 struct pd {
     uint8_t  present        :1;     // Present
@@ -51,16 +49,26 @@ struct pt {
 typedef struct pd pd_t;
 typedef struct pt pt_t;
 
+void pd_init(pd_t* pd);
+void pt_init(pt_t* pt);
+
 void paging_enable();
 void paging_disable();
 
-pd_t* paging_getPageDirectories();
+pd_t* paging_getPageDirectoryTable();
 
-pd_t* paging_getDirectory();
-pt_t* paging_getTable();
+pd_t* paging_kGetDirectory(); // Get a page directory for kernel
+pd_t* paging_uGetDirectory(); // Get a page directory for user
 
-pd_t* paging_getKernelDirectory();
-pt_t* paging_getKernelTable();
+pd_t* paging_searchDirectory(uint32_t pd_index);
+pt_t* paging_searchTable(uint32_t pd_index);
+
+// pd_t* paging_getDirectory();
+
+// pt_t* paging_getTable(); // Allocate directly with process
+
+// pd_t* paging_getKernelDirectory();
+// pt_t* paging_getKernelTable();
 
 uint32_t paging_alloc(pt_t* pt);
 void paging_free(pt_t* pt);

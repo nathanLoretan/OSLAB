@@ -10,9 +10,13 @@
 #include <kernel/interrupt/interrupt_manager.h>
 #include <kernel/memory/memory_manager.h>
 #include <drivers/pit.h>
+#include <drivers/ata.h>
+#include <drivers/sata.h>
 #include <drivers/keyboard.h>
 #include <lib/stdio.h>
 
+void testSata();
+void testAta();
 void testScheduler();
 void testPaging();
 void testAlloc();

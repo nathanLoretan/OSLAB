@@ -1,12 +1,9 @@
-# POPA:     Pop DI, SI, BP, BX, DX, CX, AX
-# POPAD:    Pop EDI, ESI, EBP, EBX, EDX, ECX, EAX
-
-; .set IRQ_BASE, 0x20
-
 .extern isr_handler, exc_handler, IRQ_BASE
 
-.section .text
+.set DATA_SEG_OFFSET, 0x10
+.set IRQ_BASE, 0x20
 
+.section .text
 .macro SAVE_REGS
     pushl %ebp
     pushl %edi
@@ -20,17 +17,27 @@
     movl %cr3, %eax
     pushl %eax
 
-    # popl %ds
-    # popl %es
-    # popl %fs
-    # popl %gs
+    movw %ds, %ax
+    pushl %eax
+
+    # Load kernel data segment
+    movw	$DATA_SEG_OFFSET, %ax
+    movw	%ax, %ds
+    movw	%ax, %es
+    movw 	%ax, %fs
+    movw	%ax, %gs
+    movw 	%ax, %ss
+
 .endm
 
 .macro RESTORE_REGS
-    # popl %gs
-    # popl %fs
-    # popl %es
-    # popl %ds
+
+    popl %eax
+    movw %ax, %ds
+    movw %ax, %es
+    movw %ax, %fs
+    movw %ax, %gs
+    movw %ax, %ss
 
     popl %eax
     movl %eax, %cr3
@@ -49,13 +56,15 @@
 .macro exc_handler n
 .global exc_handler_\n
 exc_handler_\n:
-    movb $\n, (interrupt_number)
+    cli     # Disable interrupt
+    movb $\n, (exception_number)
     jmp exception_handler
 .endm
 
 .macro interrupt n
 .global interrupt_\n
 interrupt_\n:
+    cli     # Disable interrupt
     movb $\n + IRQ_BASE, (interrupt_number)
     pushl $0
     jmp interrupt_handler
@@ -113,14 +122,15 @@ exception_handler:
     SAVE_REGS                   # Save the registers
 
     pushl %esp                  # push stack pointer
-    push (interrupt_number)     # push the interrupt nber as paramter
-    call exc_handler            # call the isr
+    push (exception_number)     # push the interrupt nber as paramter
+    call exc_handler            # call the isr, return value in eax register
     mov %eax, %esp              # switch the stack
 
     RESTORE_REGS                # Restore the registers
 
-    add $4, %esp
+    add $8, %esp                # Remove the exception number and error code
 
+    sti                         # Enable interrupt
     iret                        # interrupt return
 
 # ------------------------------------------------------------------------------
@@ -139,17 +149,20 @@ interrupt_handler:
 
     RESTORE_REGS                # Restore the registers
 
-    add $4, %esp
+    add $4, %esp                # Remove the interrupt number
 
+    sti                         # Enable interrupt
     iret                        # interrupt return
 
 # ------------------------------------------------------------------------------
 # Function call when the interruption is ignored
 .global interrupt_ignored
 interrupt_ignored:
-    iret    # interrupt return
+
+    iret            # interrupt return
 
 # ------------------------------------------------------------------------------
 
 .data
     interrupt_number: .byte 0
+    exception_number: .byte 0

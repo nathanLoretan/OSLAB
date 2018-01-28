@@ -4,9 +4,9 @@
 
 #include <common/stack.h>
 
-int stack_init(stack_t* stack, size_t stack_size, size_t data_size)
+int stack_init(stack_t* stack, size_t STACK_SIZE, size_t data_size)
 {
-    stack->stack = (uint8_t*) malloc(stack_size);
+    stack->stack = (uint8_t*) malloc(STACK_SIZE);
     stack->data  = (uint8_t*) malloc(data_size);
 
     if(stack->stack == NULL || stack->data == NULL) {
@@ -16,7 +16,7 @@ int stack_init(stack_t* stack, size_t stack_size, size_t data_size)
     stack->top    = 0;
     stack->bottom = 0;
 
-    stack->stack_size = stack_size;
+    stack->STACK_SIZE = STACK_SIZE;
     stack->data_size  = data_size;
 
     return 0;
@@ -33,7 +33,7 @@ bool_t stack_empty(stack_t* stack)
 
 bool_t stack_full(stack_t* stack)
 {
-    if(stack->top >= stack->stack_size - 1) {
+    if(stack->top >= stack->STACK_SIZE - 1) {
         return TRUE;
     }
 
@@ -57,7 +57,7 @@ uint8_t* stack_pop(stack_t* stack)
 
 int stack_push(stack_t* stack, uint8_t* data)
 {
-    if((stack->top + stack->data_size) >= stack->stack_size) {
+    if((stack->top + stack->data_size) >= stack->STACK_SIZE) {
         return -1;
     }
 

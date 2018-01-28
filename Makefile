@@ -2,9 +2,10 @@ GCCPARAMS = -m32 -Iinclude -nostdlib -fno-builtin -fno-exceptions -fno-leading-u
 ASPARAMS = --32
 LDPARAMS = -melf_i386
 
-objects = 	obj/boot/bootloader.o \
+objects = 	obj/boot/loader.o \
 			obj/kernel/kernel.o \
 			obj/kernel/gdt.o \
+			obj/kernel/gdt_flush.o \
 			obj/kernel/process/task.o \
 			obj/kernel/process/scheduler.o \
 			obj/kernel/memory/paging.o \
@@ -31,6 +32,8 @@ objects = 	obj/boot/bootloader.o \
 			obj/lib/stdlib.o \
 			obj/lib/string.o \
 			obj/test/test.o
+
+all: oslab.bin
 
 run: oslab.iso
 	@(killall VirtualBox && sleep 1) || true

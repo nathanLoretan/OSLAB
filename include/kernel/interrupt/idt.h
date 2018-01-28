@@ -37,6 +37,6 @@ typedef struct idt_entry_desc idt_entry_desc_t;
 
 void idt_init();
 void idt_interrupt_init(uint8_t interrupt, uint16_t selector, isr_t handler,
-                        uint8_t type, uint8_t  privilege);
+                        uint8_t type, uint8_t privilege);
 
 #endif // __KERNEL_IDT_H__

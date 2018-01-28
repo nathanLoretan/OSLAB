@@ -5,8 +5,8 @@
 #ifndef __KERNEL_TASK_H__
 #define __KERNEL_TASK_H__
 
-#include <common/types.h>
 #include <lib/stdio.h>
+#include <common/types.h>
 #include <kernel/gdt.h>
 #include <kernel/memory/paging.h>
 #include <kernel/memory/memory_manager.h>
@@ -83,7 +83,7 @@ struct context {
     // uint32_t gs;    // Custom g segment
     // uint32_t fs;    // Custom f segment
     // uint32_t es;    // Extra segment
-    // uint32_t ds;    // Data segment
+    uint32_t ds;    // Data segment
 
     uint32_t cr3;   // Page Directory address
 
