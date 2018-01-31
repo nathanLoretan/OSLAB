@@ -8,7 +8,6 @@
 /* Global Descriptor Table */
 struct gdt {
     seg_desc_t null_segDesc;
-    // seg_desc_t nused_segDesc;
     seg_desc_t kCode_segDesc;
     seg_desc_t kData_segDesc;
     seg_desc_t uCode_segDesc;
@@ -23,27 +22,38 @@ struct gdtr {
 }__attribute__((packed));
 typedef struct gdtr gdtr_t;
 
-gdt_t gdt;
-gdtr_t gdt_descriptor;
+gdt_t  gdt;
+gdtr_t gdtr;
 
 extern void gdt_flush(uint32_t);
 
 void gdt_init()
 {
+    // The segmentation is not used for virtual memory, all base addresses are 0.
+    // However, it needs to be define with x86 architecture and for kernel
+    // protection.
+
     gdt_seg_init(&gdt.null_segDesc,  0, 0, 0);
-    // gdt_seg_init(&gdt.nused_segDesc, 0, 0, 0);
     gdt_seg_init(&gdt.kCode_segDesc, KCODE_SEG, KCODE_SEG_LIMIT, KDATA_SEG_BASE);
     gdt_seg_init(&gdt.kData_segDesc, KDATA_SEG, KDATA_SEG_LIMIT, KCODE_SEG_BASE);
     gdt_seg_init(&gdt.uCode_segDesc, UCODE_SEG, UCODE_SEG_LIMIT, UCODE_SEG_BASE);
     gdt_seg_init(&gdt.uData_segDesc, UDATA_SEG, UDATA_SEG_LIMIT, UDATA_SEG_BASE);
 
-    // asm volatile("lgdt (%0)": :"p" (&gdt_descriptor));
+    // seg_select_t sel1 = gdt_kCode_segSelect();
+    // seg_select_t sel2 = gdt_kData_segSelect();
+    // seg_select_t sel3 = gdt_uCode_segSelect();
+    // seg_select_t sel4 = gdt_uData_segSelect();
+    //
+    // printf("%32x\n", *(uint32_t*)&sel1);
+    // printf("%32x\n", *(uint32_t*)&sel2);
+    // printf("%32x\n", *(uint32_t*)&sel3);
+    // printf("%32x\n", *(uint32_t*)&sel4);
 
-    gdt_descriptor.size   = sizeof(gdt) - 1;
-    gdt_descriptor.offset = (uint32_t) &gdt;
+    gdtr.size   = sizeof(gdt) - 1;
+    gdtr.offset = (uint32_t) &gdt;
 
     // When writting in lgdt register, the segement must be reload
-    gdt_flush((uint32_t)&gdt_descriptor);
+    gdt_flush((uint32_t)&gdtr);
 }
 
 void gdt_seg_init(seg_desc_t* seg, uint8_t type, uint32_t limit, uint32_t base)

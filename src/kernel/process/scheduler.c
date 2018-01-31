@@ -11,11 +11,11 @@ task_t* tasks[SCHEDULER_NBR_TASKS]; // first task correspond to the kernel proce
 
 void scheduler_init()
 {
-    extern pd_t* kernel_pd;
-    extern pt_t* kernel_pt;
-
-    kernel_task.pd = kernel_pd;
-    kernel_task.pt = kernel_pt;
+    // extern pd_t* kernel_pd;
+    // extern pt_t* kernel_pt;
+    //
+    // kernel_task.pd = kernel_pd;
+    // kernel_task.pt = kernel_pt;
 
     tasks[0] = &kernel_task;
 }

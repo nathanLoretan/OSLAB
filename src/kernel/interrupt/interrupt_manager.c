@@ -28,28 +28,28 @@ extern void interrupt_0x13();
 extern void interrupt_0x14();
 extern void interrupt_0x15();
 
-extern void exc_handler_0x00(); // Division by zero
-extern void exc_handler_0x01(); // Single-step interrupt
-extern void exc_handler_0x02(); // NMI
-extern void exc_handler_0x03(); // Breakpoint
-extern void exc_handler_0x04(); // Overflow
-extern void exc_handler_0x05(); // Bounds
-extern void exc_handler_0x06(); // Invalid Opcode
-extern void exc_handler_0x07(); // Coprocessor not available
-extern void exc_handler_0x08(); // Double fault
-extern void exc_handler_0x09(); // Coprocessor Segment Overrun
-extern void exc_handler_0x0A(); // Invalid Task State Segment
-extern void exc_handler_0x0B(); // Segment not present
-extern void exc_handler_0x0C(); // Stack Fault
-extern void exc_handler_0x0D(); // General protection fault
-extern void exc_handler_0x0E(); // Page fault
-extern void exc_handler_0x0F(); // reserved
-extern void exc_handler_0x10(); // Math Fault
-extern void exc_handler_0x11(); // Alignment Check
-extern void exc_handler_0x12(); // Machine Check
-extern void exc_handler_0x13(); // SIMD Floating-Point Exception
-extern void exc_handler_0x14(); // Virtualization Exception
-extern void exc_handler_0x15(); // Control Protection Exception
+extern void exc_handler_0x00();      // Division by zero
+extern void exc_handler_0x01();      // Single-step interrupt
+extern void exc_handler_0x02();      // NMI
+extern void exc_handler_0x03();      // Breakpoint
+extern void exc_handler_0x04();      // Overflow
+extern void exc_handler_0x05();      // Bounds
+extern void exc_handler_0x06();      // Invalid Opcode
+extern void exc_handler_0x07();      // Coprocessor not available
+extern void exc_handler_0x08();      // Double fault
+extern void exc_handler_0x09();      // Coprocessor Segment Overrun
+extern void exc_handler_errc_0x0A(); // Invalid Task State Segment
+extern void exc_handler_errc_0x0B(); // Segment not present
+extern void exc_handler_errc_0x0C(); // Stack Fault
+extern void exc_handler_errc_0x0D(); // General protection fault
+extern void exc_handler_errc_0x0E(); // Page fault
+extern void exc_handler_0x0F();      // reserved
+extern void exc_handler_0x10();      // Math Fault
+extern void exc_handler_0x11();      // Alignment Check
+extern void exc_handler_0x12();      // Machine Check
+extern void exc_handler_0x13();      // SIMD Floating-Point Exception
+extern void exc_handler_0x14();      // Virtualization Exception
+extern void exc_handler_0x15();      // Control Protection Exception
 
 #define HANDLER_QUEUE_SIZE  256
 
@@ -90,8 +90,10 @@ isr_t im_queue_get()
     return im_handlers[int_id];
 }
 
-uint32_t exc_handler(uint8_t exc_id, uint32_t esp)
+void exc_handler(uint32_t exc_id, uint32_t esp)
 {
+    context_t* context = (context_t*) esp;
+
     switch(exc_id)
     {
         // case 0x00: {   // Division by zero
@@ -120,8 +122,13 @@ uint32_t exc_handler(uint8_t exc_id, uint32_t esp)
         // } break;
         // case 0x0C: {   // Stack Fault
         // } break;
-        // case 0x0D: {   // General protection fault
-        // } break;
+        case 0x0D: {   // General protection fault
+            printf(" errc %32x\n", context->error);
+
+            // Error when upload user segment 18
+
+
+        } break;
         case 0x0E: {  // Page fault
 
             // Get the virtual address which are not bind to physical address
@@ -129,30 +136,89 @@ uint32_t exc_handler(uint8_t exc_id, uint32_t esp)
             asm volatile ("movl %%cr2, %0": "=r" (cr2):);
 
             // Get where a page is missing
-            uint32_t pd_index = cr2 >> 22;
+            uint32_t pd_index =  cr2 >> 22;
             uint32_t pt_index = (cr2 & 0x0003FF000) >> 12;
+            uint32_t offset   = (cr2 & 0x000000FFF);
 
             pd_t* pd = paging_searchDirectory(pd_index);
             pt_t* pt = paging_searchTable(pd_index);
 
             printf("Page Fault: cr2=%32x", cr2);
-            printf(" pd=%32x", pd_index);
-            printf(" pt=%32x", pt_index);
+            printf(" pd=%16x", pd_index);
+            printf(" pt=%16x", pt_index);
 
             if(pd == NULL) {
                 printf(" Error: directory not present\n");
+                // make pd present
             }
             else if(pt == NULL) {
                 printf(" Error: table not present\n");
+                // Allocate page table and make it present
             }
+            // page fault caused by non-present page
+            else if(!(context->error & 0x01)) {
+
+                if(pt[pt_index].present && pd->present) {
+                    printf(" used_addr=%32x\n", paging_getPhysicalAddr((uint32_t*)cr2));
+                }
+                else {
+                    // Give a page to fix the page fault
+                    uint32_t phy_addr = paging_alloc(&pt[pt_index]);
+
+                    // Print the different information
+                    printf(" phy_addr=%x\n", phy_addr);
+                }
+            }
+            // page fault caused by reserved bit set to 1
+            // else if(context->error & 0x08) {
+            //
+            //     // Disable write procted bit in CR0 register
+            //     asm volatile ("movl %cr0, %eax; andl $0xFFFEFFFF, %eax; movl %eax, %cr0;");
+            // }
             else {
-
-                // Give a page to fix the page fault
-                uint32_t phy_addr = paging_alloc(&pt[pt_index]);
-
-                // Print the different information
-                printf(" phy_addr=%x\n", phy_addr);
+                printf(" errc %32x\n", context->error);
+                // P   (0): 0 not present
+                //          1 present
+                // W/R (1): 0 caused by read operation
+                //          1 caused by write operation
+                // U/S (2): 0 caused by supervisor
+                //          1 caused by user
+                // RSVD(3): 1 caused by reserved bits = 1
+                // I/D (4): 1 caused by an instruction fetch
             }
+
+// The P (present) flag in a page-directory or page-table entry needed for the
+// address translation is clear, indicating that a page table or the page containing
+// the operand is not present in physical memory.
+
+            // Force a TLB flush
+            // asm volatile ("movl %cr3, %ecx; movl %ecx, %cr3");
+
+            // uint32_t cr0;
+            // asm volatile ("movl %%cr0, %0": "=r" (cr0):);
+            // uint32_t cr4;
+            // asm volatile ("movl %%cr4, %0": "=r" (cr4):);
+            // uint32_t cr3;
+            // asm volatile ("movl %%cr3, %0": "=r" (cr3):);
+            // printf("cr0:%32x, cr3:%32x, cr4:%32x\n", cr0, cr3, cr4);
+
+            // asm volatile ("movl %cr4, %eax; orl $0x00000080, %eax; movl %eax, %cr4;");
+            //
+            // static int cnt = 0;
+
+            // pd_t* pd2 =  paging_getPageDirectoryTable();
+            // pt_t* pt1 = (pt_t*) (uint32_t)(pd2[0].pt_addr << 12);
+            // pt_t* pt2 = (pt_t*) (uint32_t)(pd2[0x300].pt_addr << 12);
+            // printf("%8x, %8x\n", pd2[0].present, pd2[0x300].present);
+            // printf("%32x, %32x\n", (uint32_t)(pd2[0].pt_addr << 12), (uint32_t)(pd2[0x300].pt_addr << 12));
+            // printf("%8x, %8x\n", pt1[0].present, pt2[0x300].present);
+
+            // extern uint32_t testpart;
+            //
+            // printf("%32x\n", &testpart);
+
+            // if(cnt >= 2)
+            // cnt++;
 
         } break;
         // case 0x0F: {   // reserved
@@ -175,17 +241,15 @@ uint32_t exc_handler(uint8_t exc_id, uint32_t esp)
         } break;
     }
 
-    //Acknowledge the Interrupt
-    if(exc_id >= IRQ_BASE && exc_id < IRQ_BASE + IRQ_NBR_MASTER + IRQ_NBR_SLAVE)
-    {
-        io_write8(PORT_PIC_MASTER_CMD, CLEAR_FLAG);
-
-        if (exc_id >= IRQ_BASE + IRQ_NBR_MASTER){
-            io_write8(PORT_PIC_SLAVE_CMD,  CLEAR_FLAG);
-        }
-    }
-
-    return esp;
+    // //Acknowledge the Interrupt
+    // if(exc_id >= IRQ_BASE && exc_id < IRQ_BASE + IRQ_NBR_MASTER + IRQ_NBR_SLAVE)
+    // {
+    //     io_write8(PORT_PIC_MASTER_CMD, CLEAR_FLAG);
+    //
+    //     if (exc_id >= IRQ_BASE + IRQ_NBR_MASTER){
+    //         io_write8(PORT_PIC_SLAVE_CMD,  CLEAR_FLAG);
+    //     }
+    // }
 }
 
 uint32_t isr_handler(uint8_t int_id, uint32_t esp)
@@ -244,7 +308,7 @@ uint32_t isr_handler(uint8_t int_id, uint32_t esp)
         } break;
 
         default: {
-            printf("INTERRUPT: %8x\n", int_id);
+            printf("INTERRUPT: %8x\n, %32x", int_id);
         } break;
     }
 
@@ -298,15 +362,15 @@ void im_init()
     idt_interrupt_init(EXC_BASE + 0x09, *(uint16_t*)&code_segment,
                        exc_handler_0x09, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
     idt_interrupt_init(EXC_BASE + 0x0A, *(uint16_t*)&code_segment,
-                       exc_handler_0x0A, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
+                       exc_handler_errc_0x0A, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
     idt_interrupt_init(EXC_BASE + 0x0B, *(uint16_t*)&code_segment,
-                       exc_handler_0x0B, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
+                       exc_handler_errc_0x0B, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
     idt_interrupt_init(EXC_BASE + 0x0C, *(uint16_t*)&code_segment,
-                       exc_handler_0x0C, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
+                       exc_handler_errc_0x0C, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
     idt_interrupt_init(EXC_BASE + 0x0D, *(uint16_t*)&code_segment,
-                       exc_handler_0x0D, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
+                       exc_handler_errc_0x0D, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
     idt_interrupt_init(EXC_BASE + 0x0E, *(uint16_t*)&code_segment,
-                       exc_handler_0x0E, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
+                       exc_handler_errc_0x0E, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
     idt_interrupt_init(EXC_BASE + 0x0F, *(uint16_t*)&code_segment,
                        exc_handler_0x0F, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
     idt_interrupt_init(EXC_BASE + 0x10, *(uint16_t*)&code_segment,

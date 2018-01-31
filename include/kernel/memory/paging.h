@@ -49,8 +49,8 @@ struct pt {
 typedef struct pd pd_t;
 typedef struct pt pt_t;
 
-void pd_init(pd_t* pd);
-void pt_init(pt_t* pt);
+void pd_uInit(pd_t* pd);
+void pt_uInit(pt_t* pt);
 
 void paging_enable();
 void paging_disable();
@@ -65,7 +65,7 @@ pt_t* paging_searchTable(uint32_t pd_index);
 
 // pd_t* paging_getDirectory();
 
-// pt_t* paging_getTable(); // Allocate directly with process
+pt_t* paging_uGetTable(); // Allocate directly with process
 
 // pd_t* paging_getKernelDirectory();
 // pt_t* paging_getKernelTable();

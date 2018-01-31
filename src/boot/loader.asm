@@ -28,7 +28,7 @@ while:
     jge end
 
     movl %esi,   %edx
-    orl  $0x003, %edx
+    orl  $0x003, %edx   # Set entry as present and Read/Write
     movl %edx,  (%edi)
 
     addl $4096, %esi

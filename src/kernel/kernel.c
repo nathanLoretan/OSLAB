@@ -25,7 +25,13 @@ memoryManager_t kernel_memoryManager;
 
 void kmain(const void* kernel_space)
 {
-    printf("OSLAB Project\n");
+    printf("  ____   _____ _               ____  \n");
+    printf(" / __ \\ / ____| |        /\\   |  _ \\ \n");
+    printf("| |  | | (___ | |       /  \\  | |_) |\n");
+    printf("| |  | |\\___ \\| |      / /\\ \\ |  _ < \n");
+    printf("| |__| |____) | |____ / ____ \\| |_) |\n");
+    printf(" \\____/|_____/|______/_/    \\_\\____/ \n");
+    printf("=====================================\n");
 
     gdt_init();
     printf("GDT initialized\n");
@@ -53,8 +59,8 @@ void kmain(const void* kernel_space)
     printf("Interrupts activated\n");
 
     /* Test Function */
+    testScheduler();
     // testPaging();
-    // testScheduler();
     // testAlloc();
     // testAta();
     // testSata();
@@ -64,12 +70,12 @@ void kmain(const void* kernel_space)
 
     while(1)
     {
-        if(!im_queue_isEmpty()) {
-
-            isr_t handler = im_queue_get();
-            if(handler != NULL) {
-                handler();
-            }
-        }
+        // if(!im_queue_isEmpty()) {
+        //
+        //     isr_t handler = im_queue_get();
+        //     if(handler != NULL) {
+        //         handler();
+        //     }
+        // }
     }
 }

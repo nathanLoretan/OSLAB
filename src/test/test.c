@@ -123,16 +123,19 @@ void testAlloc()
 
 void schedulerA()
 {
+    // while(1){}
     while(1) {printf("A");}
 }
 
 void schedulerB()
 {
+    // while(1){}
     while(1) {printf("B");}
 }
 
 void schedulerC()
 {
+    // while(1){}
     while(1) {printf("C");}
 }
 

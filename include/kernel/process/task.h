@@ -43,38 +43,6 @@ struct eflags {
 } __attribute__((packed));
 typedef struct eflags eflags_t;
 
-// struct stack_layout { // Interrupt stack layout
-//
-//     /* Higher address */
-//
-//     // Saved by the OS
-//     // uint32_t gs;    // Custom g segment
-//     // uint32_t fs;    // Custom f segment
-//     // uint32_t es;    // Extra segment
-//     // uint32_t ds;    // Data segment
-//
-//     uint32_t eax;   // Accumulator
-//     uint32_t ebx;   // Base
-//     uint32_t ecx;   // Counter
-//     uint32_t edx;   // data
-//
-//     uint32_t esi;   // Source index
-//     uint32_t edi;   // Destination index
-//     uint32_t ebp;   // Base pointer
-//
-//     // Saved by the processor
-//     uint32_t error;     // Extra information
-//     uint32_t eip;       // Instruction pointer
-//     uint32_t cs;        // Code segment
-//     uint32_t eflags;    // EFLAGS Register
-//     uint32_t esp;       // Stack pointer
-//     uint32_t ss;        // Stack segment
-//
-//     /* Lower address */
-//
-// } __attribute__((packed));
-// typedef struct stack_layout stack_layout_t;
-
 struct context {
 
     /* Higher address */
@@ -115,7 +83,8 @@ struct task {
     uint8_t*   stack;
     context_t* context;
     memoryManager_t memoryManager;
-    pt_t* pt;
+    // pt_t* pt;
+    pt_t pt[1024] __attribute__((aligned(4096)));    // TODO: try to allocate it dynamicaly
     pd_t* pd;
 } __attribute__((packed));
 typedef struct task task_t;

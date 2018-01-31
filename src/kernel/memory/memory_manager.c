@@ -4,6 +4,8 @@
 
 #include <kernel/memory/memory_manager.h>
 
+#include <lib/stdio.h>
+
 static memoryManager_t* current_ma;
 
 void mm_init(memoryManager_t* memoryManager, uint8_t* heap)
