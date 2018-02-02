@@ -23,10 +23,8 @@ typedef struct frame          frame_t;
 typedef struct memoryManager memoryManager_t;
 
 void  mm_init(memoryManager_t* memoryManager, uint8_t* heap);
-// void  mm_process_init(memoryManager_t* memoryManager, uint8_t* heap);
 void  mm_set(memoryManager_t* memoryManager);
 
-// void* process_malloc(size_t size);
 void* malloc(size_t size);
 void  free(void* ptr);
 

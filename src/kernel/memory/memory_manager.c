@@ -14,7 +14,7 @@ void mm_init(memoryManager_t* memoryManager, uint8_t* heap)
     memoryManager->first->allocated = FALSE;
     memoryManager->first->prev = 0;
     memoryManager->first->next = 0;
-    memoryManager->first->size = 0x3FFFFF; // Size available with the page table
+    memoryManager->first->size = 0x003FFFFF; // Size available with the page table
 }
 
 void mm_set(memoryManager_t* memoryManager)

@@ -73,6 +73,7 @@ SECTIONS
     }
 
     . = _HEAP_BASE;
+    PROVIDE(_heap_base = .);
 
     /* Heap Section */
     .heap ALIGN(0x1000) : AT(ADDR(.heap) - _KERNEL_BASE)
@@ -91,5 +92,4 @@ SECTIONS
     }
 
     _KERNEL_STOP = .;
-    PROVIDE(_kernel_stop = .);
 }

@@ -1,16 +1,18 @@
 #ifndef __MEMORY_LAYOUT_H__
 #define __MEMORY_LAYOUT_H__
 
-extern uint32_t _kernel_stop;
+extern uint32_t _HEAP_BASE;
+extern uint32_t _KERNEL_STOP;
 
+// Indicate the virtual address of the user and kernel space
 #define KERNEL_BASE         0xC0000000
-#define KERNEL_HEAP         0xC0200000
-#define KERNEL_STACK        //
+#define KERNEL_HEAP         ((uint32_t)&_HEAP_BASE)
+// #define KERNEL_STACK        0xC0400000  // _stack_base
 #define KERNEL_PD_INDEX     (KERNEL_BASE >> 22)
 
 #define USER_BASE       0x00000000
-#define USER_HEAP       //
-#define USER_STACK      //
+// #define USER_HEAP       //
+// #define USER_STACK      //
 #define USER_PD_INDEX   (USER_BASE >> 22)
 
 // UCODE = User Code Segment   (Ring 3)
@@ -30,16 +32,10 @@ extern uint32_t _kernel_stop;
 #define KCODE_SEG_LIMIT     0xFFFFFFFF
 #define KDATA_SEG_LIMIT     0xFFFFFFFF
 
-#define PAGING_START    0x10000000 // _kernel_stop
+// Indicate the physical address where to stare saving pages
+#define PAGING_START    0x10000000//((uint32_t)&_KERNEL_STOP & 0xFFFFF000)
 
-
-
-
-
-// TODO: Put all the driver into a common virtual area
 // Memory space for specific drivers
 #define VIDEO_MEMORY   (0x000B8000 + 0xC0000000)
-// #define SATA_BASE
-// #define AHCI_BASE     0x10000000
 
 #endif // __MEMORY_LAYOUT_H__

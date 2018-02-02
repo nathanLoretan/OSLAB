@@ -78,6 +78,7 @@ struct context {
 typedef struct context context_t;
 
 struct task {
+    uint32_t   id;
     run_t      run;
     uint8_t*   heap;
     uint8_t*   stack;

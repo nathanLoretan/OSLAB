@@ -247,18 +247,12 @@ uint32_t isr_handler(uint8_t int_id, uint32_t esp)
         // case IRQ_BASE + 0x0D: {   // FPU / Coprocessor / Inter-processor
         // } break;
         case IRQ_BASE + 0x0E: {   // Primary ATA Hard Disk
-            // extern bool_t isAtaPriReady;
-            // isAtaPriReady = TRUE;
-
             extern bool_t isAtaReady[4];
             (!isAtaReady[0]) ? (isAtaReady[0] = TRUE) : (isAtaReady[0] = FALSE);
             (!isAtaReady[1]) ? (isAtaReady[1] = TRUE) : (isAtaReady[1] = FALSE);
 
         } break;
         case IRQ_BASE + 0x0F: {   // Secondary ATA Hard Disk
-            // extern bool_t isAtaSecReady;
-            // isAtaSecReady = TRUE;
-
             extern bool_t isAtaReady[4];
             (!isAtaReady[2]) ? (isAtaReady[2] = TRUE) : (isAtaReady[2] = FALSE);
             (!isAtaReady[3]) ? (isAtaReady[3] = TRUE) : (isAtaReady[3] = FALSE);

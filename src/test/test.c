@@ -142,7 +142,8 @@ void schedulerB()
 void schedulerC()
 {
     // while(1){}
-    while(1)
+    uint32_t cnt = 0;
+    while(cnt++  < 0xFFF)
     {
         printf("C");
         scheduler_yield();

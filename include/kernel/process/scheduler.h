@@ -6,6 +6,7 @@
 #define __KERNEL_SCHEDULER_H__
 
 #include <common/types.h>
+#include <common/list.h>
 #include <lib/stdio.h>
 #include <kernel/gdt.h>
 #include <kernel/process/task.h>
@@ -17,6 +18,7 @@
 
 void scheduler_init();
 bool_t scheduler_add(task_t* task);
+bool_t scheduler_delete(task_t* task);
 context_t* schedule_switchContext(context_t* context);
 task_t* scheduler_getCurrentTask();
 void scheduler_yield();

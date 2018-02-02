@@ -52,13 +52,20 @@ int list_add(list_t* list, size_t key, uint8_t* data, bool_t unique_key)
     new_obj->key  = key;
     new_obj->next = NULL;
     new_obj->prev = NULL;
-    new_obj->data = (uint8_t*) malloc(list->data_size);
 
-    if(new_obj->data == NULL) {
-        return -1;
+    if(list->data_size == 0) {
+        new_obj->data = data;
     }
+    else
+    {
+        new_obj->data = (uint8_t*) malloc(list->data_size);
 
-    memcpy(new_obj->data, data, list->data_size);
+        if(new_obj->data == NULL) {
+            return -1;
+        }
+
+        memcpy(new_obj->data, data, list->data_size);
+    }
 
     new_obj->next = list->sentinel.next;
     list->sentinel.next->prev = new_obj;
@@ -88,10 +95,19 @@ int list_insert(list_t* list, size_t key, uint8_t* data, bool_t unique_key, bool
     new_obj->key  = key;
     new_obj->next = NULL;
     new_obj->prev = NULL;
-    new_obj->data = (uint8_t*) malloc(list->data_size);
 
-    if(new_obj->data == NULL) {
-        return -1;
+    if(list->data_size == 0) {
+        new_obj->data = data;
+    }
+    else
+    {
+        new_obj->data = (uint8_t*) malloc(list->data_size);
+
+        if(new_obj->data == NULL) {
+            return -1;
+        }
+
+        memcpy(new_obj->data, data, list->data_size);
     }
 
     if(after_it)
@@ -150,7 +166,9 @@ int list_deleteFirst(list_t* list)
     list_obj->prev->next = list_obj->next;
     list_obj->next->prev = list_obj->prev;
 
-    free(list_obj->data);
+    if(list->data_size != 0) {
+        free(list_obj->data);
+    }
     free(list_obj);
 
     return 0;
@@ -167,7 +185,9 @@ int list_deleteLast(list_t* list)
     list_obj->prev->next = list_obj->next;
     list_obj->next->prev = list_obj->prev;
 
-    free(list_obj->data);
+    if(list->data_size != 0) {
+        free(list_obj->data);
+    }
     free(list_obj);
 
     return 0;
@@ -184,7 +204,9 @@ int list_delete(list_t* list)
 
     list_obj_t* new_iterator = list->iterator->next;
 
-    free(list->iterator->data);
+    if(list->data_size != 0) {
+        free(list->iterator->data);
+    }
     free(list->iterator);
 
     list->iterator = new_iterator;
@@ -204,7 +226,9 @@ int list_deleteKey(list_t* list, size_t key)
     list_obj->prev->next = list_obj->next;
     list_obj->next->prev = list_obj->prev;
 
-    free(list_obj->data);
+    if(list->data_size != 0) {
+        free(list_obj->data);
+    }
     free(list_obj);
 
     return 0;

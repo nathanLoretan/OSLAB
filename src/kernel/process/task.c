@@ -4,12 +4,14 @@
 
 #include <kernel/process/task.h>
 
+extern task_t* scheduler_getCurrentTask();
+bool_t scheduler_delete(task_t* task);
+
 void task_start()
 {
-    // Manage the lifetime of a task here
-    // 1. get task from scheduler
-    // 2. run the function for the task
-    // 3. when finish remove all the different element needed
+    task_t* task = scheduler_getCurrentTask();
+    task->run();
+    scheduler_delete(task);
 }
 
 void task_init(task_t* task, run_t run)
@@ -56,8 +58,10 @@ void task_init(task_t* task, run_t run)
     // Pointer Registers
     task->context->ebp = 0;
     task->context->esp = (uint32_t)task->context;
-    task->context->eip = (uint32_t)run;
+    task->context->eip = (uint32_t)task_start;
 
     // EFLAGS Register
     task->context->eflags = 0x202;
+
+    task->run = run;
 }

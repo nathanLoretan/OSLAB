@@ -22,6 +22,7 @@ typedef struct list {
     list_obj_t* iterator;
 } list_t;
 
+// If data_size == 0, the pointer will be copied. If data > 0, the data are copied
 void list_init(list_t* list, size_t data_size);
 
 int list_add(list_t* list, size_t key, uint8_t* data, bool_t unique_key);
