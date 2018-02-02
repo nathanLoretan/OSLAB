@@ -52,13 +52,16 @@ typedef struct pt pt_t;
 void pd_uInit(pd_t* pd);
 void pt_uInit(pt_t* pt);
 
+void pd_kInit(pd_t* pd);
+void pt_kInit(pt_t* pt);
+
 void paging_enable();
 void paging_disable();
 
 pd_t* paging_getPageDirectoryTable();
 
-pd_t* paging_kGetDirectory(); // Get a page directory for kernel
-pd_t* paging_uGetDirectory(); // Get a page directory for user
+uint32_t paging_kGetDirectory(pd_t** pd); // Get a page directory for kernel
+uint32_t paging_uGetDirectory(pd_t** pd); // Get a page directory for user
 
 pd_t* paging_searchDirectory(uint32_t pd_index);
 pt_t* paging_searchTable(uint32_t pd_index);
@@ -71,6 +74,7 @@ pt_t* paging_uGetTable(); // Allocate directly with process
 // pt_t* paging_getKernelTable();
 
 uint32_t paging_alloc(pt_t* pt);
+uint32_t paging_allocDriver(pt_t* pt, uint32_t phy);
 void paging_free(pt_t* pt);
 
 void paging_addTableToDirectory(pd_t* pd, pt_t* pt);

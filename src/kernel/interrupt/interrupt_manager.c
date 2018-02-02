@@ -27,6 +27,7 @@ extern void interrupt_0x12();
 extern void interrupt_0x13();
 extern void interrupt_0x14();
 extern void interrupt_0x15();
+extern void interrupt_0x50();   //Scheduler Yield
 
 extern void exc_handler_0x00();      // Division by zero
 extern void exc_handler_0x01();      // Single-step interrupt
@@ -187,39 +188,6 @@ void exc_handler(uint32_t exc_id, uint32_t esp)
                 // I/D (4): 1 caused by an instruction fetch
             }
 
-// The P (present) flag in a page-directory or page-table entry needed for the
-// address translation is clear, indicating that a page table or the page containing
-// the operand is not present in physical memory.
-
-            // Force a TLB flush
-            // asm volatile ("movl %cr3, %ecx; movl %ecx, %cr3");
-
-            // uint32_t cr0;
-            // asm volatile ("movl %%cr0, %0": "=r" (cr0):);
-            // uint32_t cr4;
-            // asm volatile ("movl %%cr4, %0": "=r" (cr4):);
-            // uint32_t cr3;
-            // asm volatile ("movl %%cr3, %0": "=r" (cr3):);
-            // printf("cr0:%32x, cr3:%32x, cr4:%32x\n", cr0, cr3, cr4);
-
-            // asm volatile ("movl %cr4, %eax; orl $0x00000080, %eax; movl %eax, %cr4;");
-            //
-            // static int cnt = 0;
-
-            // pd_t* pd2 =  paging_getPageDirectoryTable();
-            // pt_t* pt1 = (pt_t*) (uint32_t)(pd2[0].pt_addr << 12);
-            // pt_t* pt2 = (pt_t*) (uint32_t)(pd2[0x300].pt_addr << 12);
-            // printf("%8x, %8x\n", pd2[0].present, pd2[0x300].present);
-            // printf("%32x, %32x\n", (uint32_t)(pd2[0].pt_addr << 12), (uint32_t)(pd2[0x300].pt_addr << 12));
-            // printf("%8x, %8x\n", pt1[0].present, pt2[0x300].present);
-
-            // extern uint32_t testpart;
-            //
-            // printf("%32x\n", &testpart);
-
-            // if(cnt >= 2)
-            // cnt++;
-
         } break;
         // case 0x0F: {   // reserved
         // } break;
@@ -240,16 +208,6 @@ void exc_handler(uint32_t exc_id, uint32_t esp)
             printf("EXCEPTION: %8x\n", exc_id);
         } break;
     }
-
-    // //Acknowledge the Interrupt
-    // if(exc_id >= IRQ_BASE && exc_id < IRQ_BASE + IRQ_NBR_MASTER + IRQ_NBR_SLAVE)
-    // {
-    //     io_write8(PORT_PIC_MASTER_CMD, CLEAR_FLAG);
-    //
-    //     if (exc_id >= IRQ_BASE + IRQ_NBR_MASTER){
-    //         io_write8(PORT_PIC_SLAVE_CMD,  CLEAR_FLAG);
-    //     }
-    // }
 }
 
 uint32_t isr_handler(uint8_t int_id, uint32_t esp)
@@ -306,9 +264,12 @@ uint32_t isr_handler(uint8_t int_id, uint32_t esp)
             (!isAtaReady[3]) ? (isAtaReady[3] = TRUE) : (isAtaReady[3] = FALSE);
 
         } break;
+        case IRQ_YIELD: {   // scheduler_yield()
+            esp = (uint32_t)schedule_switchContext((context_t*)esp);
+        } break;
 
         default: {
-            printf("INTERRUPT: %8x\n, %32x", int_id);
+            printf("INTERRUPT: %8x\n", int_id);
         } break;
     }
 
@@ -419,6 +380,9 @@ void im_init()
                        interrupt_0x0E, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
     idt_interrupt_init(IRQ_BASE + 0x0F, *(uint16_t*)&code_segment,
                        interrupt_0x0F, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
+
+    idt_interrupt_init(IRQ_YIELD, *(uint16_t*)&code_segment,
+                      interrupt_0x50, IDT_INT_GATE_32, IDT_PRIVILEGE_KERNEL);
 
     // Initialize the Programmable Interrupt Controller
     pic_init();

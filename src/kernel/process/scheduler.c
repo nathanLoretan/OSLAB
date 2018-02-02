@@ -63,7 +63,14 @@ context_t* schedule_switchContext(context_t* context)
 
     return tasks[current_task]->context;
 
+    return context;
+
     // TODO: UNLOCK
+}
+
+void scheduler_yield()
+{
+    asm volatile("int %0": :"i" (IRQ_YIELD));
 }
 
 task_t* scheduler_getCurrentTask()

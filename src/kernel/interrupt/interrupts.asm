@@ -125,6 +125,7 @@ interrupt 0x0E
 interrupt 0x0F
 interrupt 0x31
 interrupt 0x80
+interrupt 0x50
 
 # ------------------------------------------------------------------------------
 # Call the interrupt service routine
@@ -145,6 +146,9 @@ exception_handler:
     add $8, %esp                # Remove the parameters
 
     RESTORE_REGS                # Restore the registers
+
+    # It is not possible to go in a segment with lower privilege during
+    # the interruption routine.
 
     # Jump to previous code segment
 #    pushl %eax                   # Save register eax
@@ -184,6 +188,9 @@ interrupt_handler:
     mov %eax, %esp              # switch the stack
 
     RESTORE_REGS                # Restore the registers
+
+    # It is not possible to go in a segment with lower privilege during
+    # the interruption routine.
 
     # Jump to previous code segment
 #    pushl %eax                   # Save register eax

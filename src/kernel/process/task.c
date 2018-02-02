@@ -14,7 +14,7 @@ void task_start()
 
 void task_init(task_t* task, run_t run)
 {
-    task->pd = paging_uGetDirectory();
+    paging_uGetDirectory(&task->pd);
     // task->pt = paging_uGetTable();
     pd_uInit(task->pd);
     pt_uInit(task->pt);

@@ -53,6 +53,8 @@
 
 #define ATA_PIO_SECTOR_SIZE 512
 
+#define TIMEOUT 1000000
+
 volatile bool_t isAtaReady[4];
 
 int ata_identify(uint8_t type)
@@ -89,9 +91,9 @@ int ata_identify(uint8_t type)
 
     // Wait the interrupt from the ATA device
     // while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
-    while(!isAtaReady[type] && spin < 1000000){spin++;}
+    while(!isAtaReady[type] && spin < TIMEOUT){spin++;}
 
-    if(spin >= 1000000) {
+    if(spin >= TIMEOUT) {
         return -1;
     }
 
@@ -150,9 +152,9 @@ int ata_read28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
 
     // Wait the interrupt from the ATA device
     // while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
-    while(!isAtaReady[type] && spin < 1000000){spin++;}
+    while(!isAtaReady[type] && spin < TIMEOUT){spin++;}
 
-    if(spin >= 1000000) {
+    if(spin >= TIMEOUT) {
         return -1;
     }
 
@@ -237,8 +239,13 @@ int ata_write28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
 
     // Poll the command port until BSY bit is clears, The host need to wait in
     // a loop because the drive doesn't send an interrupt at this step
-    while((status & ATA_STATUS_BSY) && !(status & ATA_STATUS_ERR)) {
+    while((status & ATA_STATUS_BSY) && !(status & ATA_STATUS_ERR) && spin < TIMEOUT) {
         status = io_read8(base + PORT_ATA_CMD);
+        spin++;
+    }
+
+    if(spin >= TIMEOUT) {
+        return -1;
     }
 
     // 512bytes should be write. Therefore, the first loop get the date wanted
@@ -262,15 +269,19 @@ int ata_write28(uint8_t type, uint32_t sector, uint8_t* data, size_t count)
     }
     // printf("\n");
 
+    // Complete the write operation to write exactly 512bytes
     for(int i = count + (count%2); i < ATA_PIO_SECTOR_SIZE; i += 2) {
         io_write16(base + PORT_ATA_DATA, 0x0000);
     }
 
     // Wait the interrupt from the ATA device
     // while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
-    while(!isAtaReady[type] && spin < 1000000){spin++;}
+    spin = 0;
+    while(!isAtaReady[type]){// && spin < TIMEOUT) {
+        //spin++;
+    }
 
-    if(spin >= 1000000) {
+    if(spin >= TIMEOUT) {
         return -1;
     }
 
@@ -307,9 +318,9 @@ int ata_flush(uint8_t type)
 
     // Wait the interrupt from the ATA device
     // while((type & 0x02) ? !isAtaSecReady : !isAtaPriReady){} // TODO: ADD Timeout
-    while(!isAtaReady[type] && spin < 1000000){spin++;}
+    while(!isAtaReady[type] && spin < TIMEOUT){spin++;}
 
-    if(spin >= 1000000) {
+    if(spin >= TIMEOUT) {
         return -1;
     }
 

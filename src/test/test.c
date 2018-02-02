@@ -8,9 +8,7 @@ void testSata()
     char textWrite[512] = "Hello World\n";
 
     printf("write: %8x\n", sata_write28(0, 1, 1, (uint16_t*)textWrite));
-
     strncpy(textWrite, "Bonjour le monde\n", sizeof("Bonjour le monde\n"));
-
     printf("read: %8x\n", sata_read28(0, 1, 1, (uint16_t*)textRead));
     printf(textRead);
     printf(textWrite);
@@ -124,19 +122,31 @@ void testAlloc()
 void schedulerA()
 {
     // while(1){}
-    while(1) {printf("A");}
+    while(1)
+    {
+        printf("A");
+        scheduler_yield();
+    }
 }
 
 void schedulerB()
 {
     // while(1){}
-    while(1) {printf("B");}
+    while(1)
+    {
+        printf("B");
+        scheduler_yield();
+    }
 }
 
 void schedulerC()
 {
     // while(1){}
-    while(1) {printf("C");}
+    while(1)
+    {
+        printf("C");
+        scheduler_yield();
+    }
 }
 
 task_t task_schedulerA;

@@ -54,6 +54,8 @@
 #define IRQ_PRIMARY_HD      IRQ_BASE + 0x0E 	// Primary ATA Hard Disk
 #define IRQ_SECONDARY_HD    IRQ_BASE + 0x0F 	// Secondary ATA Hard Disk
 
+#define IRQ_YIELD           IRQ_BASE + 0x50 	// Scheduler Yield
+
 // Initialisation Command Word One
 // D7 | D6 | D5 | D4 |  D3  |   D2 |  D1  |  D0
 // A7 | A6 | A5 | A1 | LTIM |  ADI | SNGL | IC4

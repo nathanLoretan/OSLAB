@@ -90,6 +90,9 @@
 // Port x Interrupt Status
 #define HBA_PxIS_TFES 0x40000000 // Task File Error Status
 
+pd_t* sata_pd;
+pt_t  sata_pt[1024] __attribute__((aligned(4096)));    // TODO: try to allocate it dynamicaly
+
 typedef volatile struct fis_received_struct
 {
 	uint8_t dfis[0x1C]; 			// 0x00:0x1B DMA Setup FIS
@@ -397,7 +400,7 @@ void ahci_DisableCmd(hba_port_t* port)
 
 void ahci_portInit(hba_port_t* port, uint8_t port_nbr)
 {
-	#define	AHCI_BASE 0x01000000	// AHCI base at memory address
+	uint32_t ahci_base = (uint32_t) paging_getVirtualBaseAddr(sata_pd);
 
 	// Power On the port if not already done
 	if(!(port->cmd & HBA_PxCMD_POD)) {
@@ -411,12 +414,12 @@ void ahci_portInit(hba_port_t* port, uint8_t port_nbr)
 	// Command header. Each command header has a command table
 
 	// Set Command List memory space
-	port->clb  = AHCI_BASE + (port_nbr * 1024); // Command list, 1kbyte aligned
+	port->clb  = ahci_base + (1024 * port_nbr); // Command list, 1kbyte aligned
 	port->clbu = 0;
 	memset((void*)port->clb, 0, 1024);
 
 	// Set FIS memory space for receive area
-	port->fb  = AHCI_BASE + (SATA_NBR_CMD_SLOT * 1024) + (port_nbr * 256); // FIS, 256byte aligned
+	port->fb  = ahci_base + (SATA_NBR_CMD_SLOT * 1024) + (port_nbr * 256); // FIS, 256byte aligned
 	port->fbu = 0;
 	memset((void*)port->fb, 0, 256);
 
@@ -432,7 +435,7 @@ void ahci_portInit(hba_port_t* port, uint8_t port_nbr)
 	{
 		cmdheader[i].prdtl = PRDT_NBR_ENTRY;
 
-		cmdheader[i].ctba  = AHCI_BASE + (SATA_NBR_CMD_SLOT * 1024) +
+		cmdheader[i].ctba  = ahci_base + (SATA_NBR_CMD_SLOT * 1024) +
 							(SATA_NBR_FIS_STR * 256) + (i * 256) +
 							(port_nbr * 8192);
 		cmdheader[i].ctbau = 0;
@@ -499,6 +502,7 @@ void ahci_searchPort(hba_mem_t* abar)
 			if(type == AHCI_DEV_SATA) {
 				printf("SATA drive found at port %8x\n", i);
 				ahci_portInit(&abar->ports[i], i);
+
 			}
 			else if(type == AHCI_DEV_SATAPI) {
 				// printf("SATAPI drive found at port %8x\n", i);
@@ -526,24 +530,20 @@ int sata_read28(uint8_t port_nbr, uint32_t lba, uint32_t sectorCnt, uint16_t* da
 	// TODO timeout
 	uint32_t spin = 0; // Spin lock timeout counter
 
-	// Disable paging to use memory mapped hardware register
-	paging_disable();
-
 	hba_port_t* port = &abar->ports[port_nbr];
 
 	uint8_t slot = ahci_getFreeSlot(port);
 	if(slot == -1) {
-		paging_enable();
 		return -1;
 	}
 
 	// Get the command Header corresponding to the command list slot of the port
-	hba_cmdHeader_t* cmdHeader = (hba_cmdHeader_t*)(port->clb + slot);
-	cmdHeader->w	 = 0; 	// Read
-	cmdHeader->p	 = 0;   // Prefetchable
+	hba_cmdHeader_t* cmdHeader = (hba_cmdHeader_t*)(port->clb + sizeof(hba_cmdHeader_t) * slot);
+	cmdHeader->w = 0; 	// Read
+	cmdHeader->p = 0;   // Prefetchable
 
 	// Command FIS length
-	cmdHeader->cfl 	 = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
+	cmdHeader->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
 
 	// Get the command Table corresponding to the command Header
 	hba_cmdTable_t* cmdTable = (hba_cmdTable_t*) cmdHeader->ctba;
@@ -591,13 +591,10 @@ int sata_read28(uint8_t port_nbr, uint32_t lba, uint32_t sectorCnt, uint16_t* da
 	while((port->tfd & ATA_STATUS_BSY) && spin < 1000000) {spin++;}
 
 	// If timeout
-	if (spin >= 1000000)
-	{
-		paging_enable();
+	if (spin >= 1000000) {
 		return -1;
 	}
 
-	paging_enable();
 	return 0;
 }
 
@@ -606,24 +603,20 @@ int sata_write28(uint8_t port_nbr, uint32_t lba, uint32_t sectorCnt, uint16_t* d
 	// TODO timeout
 	uint32_t spin = 0; // Spin lock timeout counter
 
-	// Disable paging to use memory mapped hardware register
-	paging_disable();
-
 	hba_port_t* port = &abar->ports[port_nbr];
 
 	uint8_t slot = ahci_getFreeSlot(port);
 	if(slot == -1) {
-		paging_enable();
 		return -1;
 	}
 
 	// Get the command Header corresponding to the command list slot of the port
 	hba_cmdHeader_t* cmdHeader = (hba_cmdHeader_t*)(port->clb + slot);
-	cmdHeader->w	 = 1; 	// Read
-	cmdHeader->p	 = 0;   // Prefetchable
+	cmdHeader->w = 1; 	// Read
+	cmdHeader->p = 0;   // Prefetchable
 
 	// Command FIS length
-	cmdHeader->cfl 	 = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
+	cmdHeader->cfl = sizeof(fis_reg_h2d_t) / sizeof(uint32_t);
 
 	// Get the command Table corresponding to the command Header
 	hba_cmdTable_t* cmdTable = (hba_cmdTable_t*) cmdHeader->ctba;
@@ -671,13 +664,10 @@ int sata_write28(uint8_t port_nbr, uint32_t lba, uint32_t sectorCnt, uint16_t* d
 	while((port->tfd & ATA_STATUS_BSY) && spin < 1000000) {}
 
 	// If timeout
-	if (spin >= 1000000)
-	{
-		paging_enable();
+	if (spin >= 1000000) {
 		return -1;
 	}
 
-	paging_enable();
 	return 0;
 }
 
@@ -694,15 +684,20 @@ int sata_init()
         return -1;
     }
 
-	// Disable paging to use memory mapped hardware register
-	paging_disable();
+	// allocate the virtual address space used for the AHCI controller
+	// TODO: Allocate the page dynamically
+	uint32_t pd_index = paging_kGetDirectory(&sata_pd);
+	pd_kInit(sata_pd);
+	pt_kInit(sata_pt);
 
-	abar = (hba_mem_t*) sata->config_data.base_addr_5;
+	paging_addTableToDirectory(sata_pd, sata_pt);
+
+	// Allocate the last page for the phyisical address of the driver
+	paging_allocDriver(&sata_pt[1023], sata->config_data.base_addr_5);
+	abar = (hba_mem_t*) paging_getVirtualAddr(pd_index, 1023, 0);
 
 	ahci_searchPort(abar);
 	ahci_enableInterrupt(abar);
-
-	paging_enable();
 
     return 0;
 }
